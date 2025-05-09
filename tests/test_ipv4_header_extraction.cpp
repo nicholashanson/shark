@@ -39,4 +39,8 @@ TEST( PacketParsingTests, IPV4HeaderExtraction ) {
     std::vector<uint8_t> ipv4_header = shark::extract_ipv4_header( ethernet_frame );
 
     ASSERT_EQ( ipv4_header.size(), 20 );
+
+    shark::ipv4_header header = shark::parse_ipv4_header( ipv4_header );
+
+    ASSERT_EQ( header.protocol, static_cast<unsigned char>( shark::protocol::UDP ) ); 
 } 
