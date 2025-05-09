@@ -8,8 +8,13 @@
 
 namespace shark {
 
-    enum class protocol {
+    enum class protocol : uint8_t {
+        TCP = 0x06,
         UDP = 0x11
+    };
+
+    enum class port_numbers : uint16_t {
+        HTTPS = 0x01bb // 443
     };
 
     struct ipv4_header {
@@ -37,6 +42,8 @@ namespace shark {
     std::array<uint8_t,8> extract_udp_header( const unsigned char* ethernet_frame, const size_t ipv4_header_len );
 
     ipv4_header parse_ipv4_header( const std::vector<uint8_t>& raw_ipv4_header );
+
+    udp_header parse_udp_header( const std::array<uint8_t,8>& raw_udp_header );
 
 } // namespace shark
 

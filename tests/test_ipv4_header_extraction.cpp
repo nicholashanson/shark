@@ -57,4 +57,9 @@ TEST( PacketParsingTests, IPV4HeaderExtraction ) {
     std::array<uint8_t,8> udp_header = shark::extract_udp_header( ethernet_frame, header.ihl );
 
     ASSERT_EQ( udp_header[ 0 ], 0x01 );
+
+    shark::udp_header parsed_udp_header = shark::parse_udp_header( udp_header );
+
+    ASSERT_EQ( parsed_udp_header.source_port, static_cast<uint16_t>( shark::port_numbers::HTTPS ) );
+
 } 

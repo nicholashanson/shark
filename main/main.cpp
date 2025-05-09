@@ -51,7 +51,7 @@ void packet_handler( unsigned char *user_data,
               << pkthdr->ts.tv_usec << std::endl;
 
     std::cout << "First 16 bytes of packet data: ";
-    for ( int i = 0; i < 40; i++ ) {
+    for ( int i = 0; i < pkthdr->len; i++ ) {
         printf( "%02x ", packet[ i ] );
     }
     std::cout << std::endl;

@@ -34,4 +34,13 @@ namespace shark {
         return header;
     }
 
+    udp_header parse_udp_header( const std::array<uint8_t,8>& raw_udp_header ) {
+
+        udp_header header;
+
+        header.source_port = ( raw_udp_header[ 0 ] << 8 ) | raw_udp_header[ 1 ];
+
+        return header;
+    }
+
 } // namespace shark
