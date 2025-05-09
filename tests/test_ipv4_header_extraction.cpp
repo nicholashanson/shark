@@ -33,7 +33,17 @@ TEST( PacketParsingTests, IPV4HeaderExtraction ) {
         // source IP address
         0xc0, 0xa8, 0x00, 0x15, 
         // destination IP address
-        0xad, 0xc2, 0x03, 0x49
+        0xad, 0xc2, 0x03, 0x49,
+
+        /* udp header */
+        // source port
+        0x01, 0xbb,
+        // destination port
+        0xce, 0xb9, 
+        // length
+        0x04, 0xea, 
+        // checksum
+        0x01, 0xb8
     };
 
     std::vector<uint8_t> ipv4_header = shark::extract_ipv4_header( ethernet_frame );
@@ -42,5 +52,9 @@ TEST( PacketParsingTests, IPV4HeaderExtraction ) {
 
     shark::ipv4_header header = shark::parse_ipv4_header( ipv4_header );
 
-    ASSERT_EQ( header.protocol, static_cast<unsigned char>( shark::protocol::UDP ) ); 
+    ASSERT_EQ( header.protocol, static_cast<unsigned char>( shark::protocol::UDP ) );
+    
+    std::array<uint8_t,8> udp_header = shark::extract_udp_header( ethernet_frame, header.ihl );
+
+    ASSERT_EQ( udp_header[ 0 ], 0x01 );
 } 
