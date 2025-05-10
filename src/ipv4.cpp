@@ -24,6 +24,22 @@ namespace shark {
         return udp_header;
     }
 
+    std::vector<uint8_t> extract_tcp_header( const unsigned char* ethernet_frame,
+                                             const size_t ipv4_header_len ) {
+
+        std::vector<uint8_t> tcp_header;
+
+        size_t tcp_header_offset = 14 + ipv4_header_len;
+
+        uint8_t data_offset_byte = ethernet_frame[ tcp_header_offset + 12 ];
+
+        size_t data_offset = ( data_offset_byte >> 4 ) * 4;
+        
+        tcp_header.resize( data_offset );
+
+        return tcp_header;
+    }
+
     ipv4_header parse_ipv4_header( const std::vector<uint8_t>& raw_ipv4_header ) {
 
         ipv4_header header;
