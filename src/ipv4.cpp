@@ -59,4 +59,34 @@ namespace shark {
         return header;
     }
 
+
+    tcp_header parse_tcp_header( const std::vector<uint8_t>& raw_tcp_header ) {
+
+        if ( raw_tcp_header.size() < 20 ) {
+            throw std::runtime_error( "Invalid TCP header size" );
+        }
+
+        tcp_header header;
+
+        header.source_port = ( raw_tcp_header[ 0 ] << 8 ) | raw_tcp_header[ 1 ];
+
+        header.destination_port = ( raw_tcp_header[ 2 ] << 8 ) | raw_tcp_header[ 3 ];
+
+        header.sequence_number = ( raw_tcp_header[ 4 ] << 24 ) | ( raw_tcp_header[ 5 ] << 16 ) |
+                                 ( raw_tcp_header[ 6 ] << 8 ) | raw_tcp_header[ 7 ];
+
+        header.acknowledgment_number = ( raw_tcp_header[ 8 ] << 24 ) | ( raw_tcp_header[ 9 ] << 16 ) |
+                                       ( raw_tcp_header[ 10 ] << 8 ) | raw_tcp_header[ 11 ];
+
+        header.data_offset = ( raw_tcp_header[ 12 ] >> 4 ) & 0x0F;  
+
+        header.window_size = ( raw_tcp_header[ 14 ] << 8 ) | raw_tcp_header[ 15 ];
+
+        header.checksum = ( raw_tcp_header[ 16 ] << 8 ) | raw_tcp_header[ 17 ];
+
+        header.urgent_pointer = ( raw_tcp_header[ 18 ] << 8 ) | raw_tcp_header[ 19 ];
+
+        return header;
+    }
+
 } // namespace shark

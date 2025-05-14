@@ -2,9 +2,16 @@
 #define IPV4_HPP
 
 #include <array>
+#include <map>
+#include <string>
 #include <vector>
+
 #include <cstdint>
 #include <cstring>
+
+#include <any>
+#include <optional>
+#include <stdexcept>
 
 namespace shark {
 
@@ -50,6 +57,12 @@ namespace shark {
         uint16_t window_size;
         uint16_t checksum;
         uint16_t urgent_pointer;
+
+        std::optional<std::map<std::string,std::any>> options;
+
+        bool operator==( const tcp_header& other ) const {
+            return std::memcmp( this, &other, sizeof( tcp_header ) - sizeof( options ) ) == 0;
+        }
     };
 
     /*
