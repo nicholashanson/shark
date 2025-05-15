@@ -44,8 +44,8 @@ namespace test {
         // acknowledgment number
         0x00, 0x00, 0x00, 0x00, 
         // data offset and reserved
-        0x80, 
-        // flags (SYN)
+        0xa0, 
+        // flags ( SYN )
         0x02, 
         // window size
         0xff, 0xff, 
@@ -54,10 +54,12 @@ namespace test {
         // urgent pointer
         0x00, 0x00, 
 
-        /* tcp options */
-        0x02, 0x04, 0x05, 0xb4, // maximum segment size (MSS) = 1460
-        0x04, 0x02, 0x08, 0x0a, 0x02, 0x0d, 0x72, 0x64, // timestamp option
-        0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x09  // window scale factor and NOP options
+        /* tcp options */                                               /* tcp options */
+        0x02, 0x04, 0x05, 0xb4,                                         // maximum segment size (MSS) = 1460
+        0x04, 0x02,                                                     // selective acknowledgment permitted
+        0x08, 0x0a, 0x02, 0x0d, 0x72, 0x64, 0x00, 0x00, 0x00, 0x00,     // timestamp option
+        0x01,                                                           // no operation
+        0x03, 0x03, 0x09                                                // window scale factor 
     };   
 
     inline const unsigned char tcp_synack_packet[] = {
@@ -93,11 +95,11 @@ namespace test {
         0x00, 0x00,             // Urgent pointer
 
         /* tcp options */
-        0x02, 0x04, 0x05, 0xb4,             // MSS = 1460
-        0x04, 0x02,                         // SACK permitted
-        0x08, 0x0a, 0x58, 0x64, 0xbc, 0x69, // Timestamp
-        0x02, 0x0d, 0x72, 0x64,             // Timestamp echo reply
-        0x01, 0x03, 0x03, 0x07              // NOP + Window scale
+        0x02, 0x04, 0x05, 0xb4,                                     // MSS = 1460
+        0x04, 0x02,                                                 // SACK permitted
+        0x08, 0x0a, 0x58, 0x64, 0xbc, 0x69, 0x02, 0x0d, 0x72, 0x64, // Timestamp
+        0x01,                                                       // NOP 
+        0x03, 0x03, 0x07                                            // Window scale
     };
 
     inline const unsigned char tcp_ack_packet[] = {
@@ -133,9 +135,9 @@ namespace test {
         0x00, 0x00,             // Urgent pointer
 
         /* tcp options */
-        0x01, 0x01,                         // NOP, NOP (padding)
-        0x08, 0x0a, 0x02, 0x0d, 0x72, 0x97, // Timestamp value
-        0x58, 0x64, 0xbc, 0x69              // Timestamp echo reply
+        0x01,                                                           // NOP
+        0x01,                                                           // NOP
+        0x08, 0x0a, 0x02, 0x0d, 0x72, 0x97, 0x58, 0x64, 0xbc, 0x69      // timestamp             
     };    
 
     inline const unsigned char http_get_packet[] = {
@@ -261,7 +263,7 @@ namespace test {
         // version and header length
         0x45, // version = 4, header length = 5 * 4 = 20 bytes
         // DSCP and ECN
-        0x00,
+        0x00,   
         // total length of packet
         0x01, 0x03, 
         // identification

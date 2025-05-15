@@ -37,6 +37,8 @@ namespace shark {
         
         tcp_header.resize( data_offset );
 
+        std::memcpy( tcp_header.data(), ethernet_frame + 14 + ipv4_header_len, data_offset );
+
         return tcp_header;
     }
 
@@ -86,7 +88,88 @@ namespace shark {
 
         header.urgent_pointer = ( raw_tcp_header[ 18 ] << 8 ) | raw_tcp_header[ 19 ];
 
+        if ( header.data_offset == 5 ) 
+            return header;
+        
+        size_t index = 20;
+
+        size_t header_byte_length = header.data_offset * 4;
+
+        while ( index < header_byte_length ) {
+
+            uint8_t kind = raw_tcp_header[ index ];
+    
+            if ( kind == 0 ) {
+                break;
+            } else if ( kind == 1 ) {
+                header.options.push_back( { kind, {} } );
+                index += 1;
+            } else {
+
+                uint8_t length = raw_tcp_header[ index + 1 ];
+    
+                std::vector<uint8_t> data;
+
+                if ( length > 2 ) {
+                    data.insert( data.end(), 
+                                 raw_tcp_header.begin() + index + 2,
+                                 raw_tcp_header.begin() + index + length);
+                }
+    
+                header.options.push_back( { kind, data } );
+
+                index += length;
+            }
+        }
+
         return header;
+    }
+
+    std::vector<uint8_t> extract_http_payload( const unsigned char* ethernet_frame ) {
+        
+        const size_t ethernet_header_len = 14;
+
+        uint8_t ihl = ethernet_frame[ ethernet_header_len ] & 0x0F;
+        size_t ipv4_header_len = ihl * 4;
+
+        uint16_t total_length = ( ethernet_frame[ ethernet_header_len + 2 ] << 8 ) |
+                                  ethernet_frame[ ethernet_header_len + 3 ];
+
+        size_t tcp_header_offset = ethernet_header_len + ipv4_header_len;
+
+        uint8_t data_offset_byte = ethernet_frame[ tcp_header_offset + 12 ];
+        size_t tcp_header_len = ( ( data_offset_byte >> 4 ) & 0x0F ) * 4;
+
+        uint16_t src_port = ( ethernet_frame[ tcp_header_offset ] << 8 ) | ethernet_frame[ tcp_header_offset + 1 ];
+        uint16_t dst_port = ( ethernet_frame[ tcp_header_offset + 2 ] << 8 ) | ethernet_frame[ tcp_header_offset + 3 ];
+
+        size_t http_payload_len = total_length - ipv4_header_len - tcp_header_len;
+
+        const uint8_t* http_payload_ptr = ethernet_frame + tcp_header_offset + tcp_header_len;
+
+        std::vector<uint8_t> http_payload( http_payload_len );
+        std::memcpy( http_payload.data(), http_payload_ptr, http_payload_len );
+
+        return http_payload;
+    }
+
+    std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>
+    split_http_payload( const std::vector<uint8_t>& payload ) {
+
+        auto begin = payload.begin();
+        auto end = payload.end();
+
+        auto request_line_end = std::search( begin, end, "\r\n", "\r\n" + 2 );
+        std::vector<uint8_t> request_line( begin, request_line_end );
+
+        auto headers_start = request_line_end + 2; 
+        auto headers_end = std::search( headers_start, end, "\r\n\r\n", "\r\n\r\n" + 4 );
+        std::vector<uint8_t> headers( headers_start, headers_end );
+        
+        auto body_start = headers_end + 4; 
+        std::vector<uint8_t> body( body_start, end );
+
+        return { request_line, headers, body };
     }
 
 } // namespace shark
