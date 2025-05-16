@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <ipv4.hpp>
+#include <utils.hpp>
 
 #include <iomanip>
 
@@ -242,6 +243,13 @@ TEST( PacketParsingTests, VisualCheckParsedText ) {
     std::string http_content_string( dechunked_http_content.begin(), dechunked_http_content.end() );
 
     test::show_text_in_qt_window( QString::fromStdString( http_content_string ) );
+}
+
+TEST( UtilitiesTest, ReadPacketDataFromFile ) {
+
+    auto packet_data = shark::read_packets_from_file( "../packet_data/bitmap_over_http.txt" );
+
+    ASSERT_EQ( packet_data.size(), 14 );
 }
 
 
