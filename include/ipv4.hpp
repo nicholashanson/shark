@@ -20,7 +20,12 @@
 
 namespace shark {
 
-    typedef std::unordered_map<std::string,std::string> http_headers;
+    enum class http_type {
+        REQUEST,
+        RESPONSE
+    };
+
+    using http_headers = std::unordered_map<std::string,std::string>;
 
     enum class protocol : uint8_t {
         TCP = 0x06,
@@ -125,6 +130,8 @@ namespace shark {
     std::string trim( const std::string& str );
 
     http_headers parse_http_headers( const std::vector<uint8_t>& header_bytes );
+
+    http_type get_http_type( const std::vector<uint8_t>& http_payload );
 
 } // namespace shark
 

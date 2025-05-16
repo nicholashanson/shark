@@ -228,4 +228,16 @@ namespace shark {
         return headers;
     }
 
+    http_type get_http_type( const std::vector<uint8_t>& http_payload ) {
+
+        std::string first_five( http_payload.begin(), http_payload.begin() + 5 );
+
+
+        if ( first_five.compare( 0, 5, "HTTP/" ) == 0 ) {
+            return http_type::RESPONSE; 
+        } else {
+            return http_type::REQUEST;
+        }
+    }
+
 } // namespace shark

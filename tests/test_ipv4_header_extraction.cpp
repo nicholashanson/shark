@@ -201,7 +201,20 @@ TEST( PacketParsingTests, TCPHeaderExtraction ) {
     shark::tcp_header actual_header = shark::parse_tcp_header( tcp_bytes );
 
     ASSERT_EQ( expected_header, actual_header );
-} 
+}
+
+TEST( PacketParsingTests, HttpType ) {
+
+    auto http_request_payload = shark::extract_http_payload( test::http_get_packet );
+    auto http_response_payload = shark::extract_http_payload( test::http_response_packet );
+
+    shark::http_type request_type = shark::get_http_type( http_request_payload );
+    shark::http_type response_type = shark::get_http_type( http_response_payload );
+
+    ASSERT_EQ( request_type, shark::http_type::REQUEST );
+    ASSERT_EQ( response_type, shark::http_type::RESPONSE );
+}
+
 
 
 
