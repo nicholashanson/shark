@@ -3,7 +3,9 @@
 #include <iomanip>
 #include <iostream>
 
+#ifdef _WIN32
 #include <winsock2.h>
+#endif
 
 #include <string>
 
@@ -90,8 +92,21 @@ int main() {
 
     // Open the device for packet capture
     pcap_t *handle = pcap_open_live( device->name, BUFSIZ, 1, 1000, errbuf );
-    if ( handle == NULL ) {
+    if ( handle == NULL ) { ( the end goal is to )
         std::cerr << "Error opening device: " << errbuf << std::endl;
+        return 1;
+    }
+
+    // Apply a filter to capture only packets on port 3000 (for TCP)
+    struct bpf_program fp; // Compiled filter
+    const char *filter_exp = "tcp port 3000";  // Filter expression for port 3000 (TCP)
+    if ( pcap_compile( handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN ) == -1 ) {
+        std::cerr << "Error compiling filter: " << pcap_geterr( handle ) << std::endl;
+        return 1;
+    }
+
+    if ( pcap_setfilter( handle, &fp ) == -1 ) {
+        std::cerr << "Error setting filter: " << pcap_geterr( handle ) << std::endl;
         return 1;
     }
 
