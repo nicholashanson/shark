@@ -240,4 +240,26 @@ namespace shark {
         }
     }
 
+    http_response_status_line parse_http_response_status_line( const std::vector<uint8_t>& status_line_bytes ) {
+
+        std::string line( status_line_bytes.begin(), status_line_bytes.end() );
+
+        std::istringstream stream(line);
+        
+        http_response_status_line status_line;
+
+        stream >> status_line.http_version;
+
+        std::string status_code_string;
+        stream >> status_code_string;
+        status_line.status_code = std::stoi( status_code_string );
+
+        std::string reason_phrase;
+        std::getline( stream, reason_phrase );
+
+        status_line.reason_phrase = trim(reason_phrase);
+
+        return status_line;
+    }
+
 } // namespace shark

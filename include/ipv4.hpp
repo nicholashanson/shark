@@ -20,6 +20,12 @@
 
 namespace shark {
 
+    struct http_response_status_line {
+        std::string http_version;
+        int status_code;
+        std::string reason_phrase;
+    };
+
     enum class http_type {
         REQUEST,
         RESPONSE
@@ -133,6 +139,7 @@ namespace shark {
 
     http_type get_http_type( const std::vector<uint8_t>& http_payload );
 
+    http_response_status_line parse_http_response_status_line( const std::vector<uint8_t>& status_line_bytes );
 } // namespace shark
 
 #endif

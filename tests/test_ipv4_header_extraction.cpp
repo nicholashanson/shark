@@ -215,6 +215,17 @@ TEST( PacketParsingTests, HttpType ) {
     ASSERT_EQ( response_type, shark::http_type::RESPONSE );
 }
 
+TEST( PacketParsingTests, HttpResponseStatusLine ) {
+
+    auto http_payload = shark::extract_http_payload( test::http_response_packet );
+
+    auto http_sections = shark::split_http_payload( http_payload );
+
+    auto htpp_response_status_line = shark::parse_http_response_status_line( std::get<0>( http_sections ) );
+
+    ASSERT_EQ( htpp_response_status_line.status_code, 200 );
+}
+
 
 
 
