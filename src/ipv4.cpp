@@ -262,4 +262,14 @@ namespace shark {
         return status_line;
     }
 
+    std::vector<uint8_t> decode_single_chunk( const std::vector<uint8_t>& chunked_body ) {
+
+        auto it = std::search( chunked_body.begin(), chunked_body.end(), "\r\n", "\r\n" + 2 );
+    
+        size_t chunk_size = std::stoul( std::string( chunked_body.begin(), it ), nullptr, 16 );
+
+        auto data_start = it + 2;
+
+        return std::vector<uint8_t>( data_start, data_start + chunk_size );
+    }
 } // namespace shark

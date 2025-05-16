@@ -140,6 +140,8 @@ namespace shark {
     http_type get_http_type( const std::vector<uint8_t>& http_payload );
 
     http_response_status_line parse_http_response_status_line( const std::vector<uint8_t>& status_line_bytes );
+
+    std::vector<uint8_t> decode_single_chunk( const std::vector<uint8_t>& chunked_body );
 } // namespace shark
 
 #endif

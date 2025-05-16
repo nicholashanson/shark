@@ -4,6 +4,7 @@
 
 #include <iomanip>
 
+#include "qt.hpp"
 #include "test_constants.hpp"
 
 void print_tcp_options( const shark::tcp_header& header ) {
@@ -225,6 +226,24 @@ TEST( PacketParsingTests, HttpResponseStatusLine ) {
 
     ASSERT_EQ( htpp_response_status_line.status_code, 200 );
 }
+
+TEST( PacketParsingTests, VisualCheckParsedText ) {
+
+    auto http_payload = shark::extract_http_payload( test::http_response_packet );
+
+    auto http_sections = shark::split_http_payload( http_payload );
+
+    auto http_content = std::get<2>( http_sections ); 
+
+    EXPECT_FALSE( http_content.empty() );
+
+    auto dechunked_http_content = shark::decode_single_chunk( http_content ); 
+
+    std::string http_content_string( dechunked_http_content.begin(), dechunked_http_content.end() );
+
+    test::show_text_in_qt_window( QString::fromStdString( http_content_string ) );
+}
+
 
 
 
