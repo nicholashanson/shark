@@ -3,6 +3,16 @@
 
 namespace shark {
 
+    std::string trim( const std::string& str ) {
+        
+        size_t start = str.find_first_not_of(" \t\r\n" );
+        size_t end = str.find_last_not_of(" \t\r\n" );
+
+        return ( start == std::string::npos || end == std::string::npos )
+            ? ""
+            : str.substr( start, end - start + 1 );
+    }
+
     std::vector<uint8_t> extract_ipv4_header( const unsigned char* ethernet_frame ) {
 
         uint8_t ihl = ethernet_frame[ 14 ] & 0x0F;      
@@ -170,6 +180,52 @@ namespace shark {
         std::vector<uint8_t> body( body_start, end );
 
         return { request_line, headers, body };
+    }
+
+    http_request_line parse_http_request_line( const std::vector<uint8_t>& request_line_bytes ) {
+
+        std::string request_line_string( request_line_bytes.begin(), request_line_bytes.end() );
+
+        std::stringstream request_line_stream( request_line_string );
+
+        http_request_line r_line;
+
+        request_line_stream >> r_line.method_token >> r_line.path >> r_line.http_version;
+
+        return r_line;
+    }
+
+    http_headers parse_http_headers(const std::vector<uint8_t>& header_bytes) {
+        
+        std::string headers_string( header_bytes.begin(), header_bytes.end() );
+        
+        http_headers headers;
+
+        size_t pos = 0;
+
+        while ( pos < headers_string.size() ) {
+            
+            size_t line_end = headers_string.find( "\r\n", pos );
+
+            std::string line;
+
+            if ( line_end == std::string::npos ) {
+                line = headers_string.substr( pos );
+                pos = headers_string.size();
+            } else {
+                line = headers_string.substr( pos, line_end - pos );
+                pos = line_end + 2; 
+            }
+
+            size_t colon_pos = line.find(':');
+
+            std::string key = trim( line.substr( 0, colon_pos ) );
+            std::string value = trim( line.substr( colon_pos + 1 ) );
+
+            headers[ key ] = value;
+        }
+
+        return headers;
     }
 
 } // namespace shark

@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <unordered_map>
+#include <sstream>
 
 #include <cstdint>
 #include <cstring>
@@ -18,6 +20,8 @@
 
 namespace shark {
 
+    typedef std::unordered_map<std::string,std::string> http_headers;
+
     enum class protocol : uint8_t {
         TCP = 0x06,
         UDP = 0x11
@@ -26,6 +30,12 @@ namespace shark {
     enum class port_numbers : uint16_t {
         HTTP = 0x50,    // HTTP: 80
         HTTPS = 0x01bb  // HTTPS: 443
+    };
+
+    struct http_request_line {
+        std::string method_token;
+        std::string path;
+        std::string http_version;
     };
 
     struct ethernet_header {
@@ -108,6 +118,13 @@ namespace shark {
     bool is_ipv4( const unsigned char* ethernet_frame );
 
     bool is_udp( const unsigned char* ethernet_frame );
+
+    http_request_line parse_http_request_line( const std::vector<uint8_t>& request_line_bytes );
+
+    // TODO: check http rules on whitespace in headers
+    std::string trim( const std::string& str );
+
+    http_headers parse_http_headers( const std::vector<uint8_t>& header_bytes );
 
 } // namespace shark
 

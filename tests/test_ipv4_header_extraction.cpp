@@ -138,6 +138,28 @@ TEST( PacketParsingTests, HttpPayloadSectionLengths ) {
     ASSERT_EQ( std::get<2>( http_sections ).size(), 0 );
 }
 
+TEST( PacketParsingTests, HttpRequestLine ) {
+
+    std::vector<uint8_t> http_payload = shark::extract_http_payload( test::http_get_packet );
+
+    auto http_sections = shark::split_http_payload( http_payload );
+
+    shark::http_request_line r_line = shark::parse_http_request_line( std::get<0>( http_sections ) );
+
+    ASSERT_EQ( r_line.method_token, "GET" );
+}
+
+TEST( PacketParsingTests, HttpHeader ) {
+
+    std::vector<uint8_t> http_payload = shark::extract_http_payload( test::http_get_packet );
+
+    auto http_sections = shark::split_http_payload( http_payload );
+
+    shark::http_headers headers = shark::parse_http_headers( std::get<1>( http_sections ) );
+
+    ASSERT_EQ( headers[ "Host" ], "192.168.0.21:3000" );
+}
+
 TEST( PacketParsingTests, UDPHeaderExtraction ) {
 
     std::vector<uint8_t> ipv4_header = shark::extract_ipv4_header( test::ethernet_frame_udp );
