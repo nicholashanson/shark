@@ -20,6 +20,13 @@
 
 namespace shark {
 
+    using session = std::vector<std::vector<uint8_t>>;
+
+    struct raw_tcp_frame {
+        std::vector<uint8_t> header;
+        std::vector<uint8_t> body;
+    };
+
     struct http_response_status_line {
         std::string http_version;
         int status_code;
@@ -32,6 +39,10 @@ namespace shark {
     };
 
     using http_headers = std::unordered_map<std::string,std::string>;
+
+    using tcp_stream = std::map<uint32_t,std::vector<uint8_t>>; 
+
+    using raw_tcp_stream = std::vector<std::vector<uint8_t>>;
 
     enum class protocol : uint8_t {
         TCP = 0x06,
@@ -142,6 +153,12 @@ namespace shark {
     http_response_status_line parse_http_response_status_line( const std::vector<uint8_t>& status_line_bytes );
 
     std::vector<uint8_t> decode_single_chunk( const std::vector<uint8_t>& chunked_body );
+
+    raw_tcp_stream extract_tcp_stream( const session& tcp_session );
+
+    tcp_stream parce_tcp_stream( const raw_tcp_stream& raw_stream );
+
+    std::vector<raw_tcp_frame> extract_raw_tcp_stream( const session& tcp_session );
     
 } // namespace shark
 

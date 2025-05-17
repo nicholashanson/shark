@@ -252,6 +252,15 @@ TEST( UtilitiesTest, ReadPacketDataFromFile ) {
     ASSERT_EQ( packet_data.size(), 14 );
 }
 
+TEST( PacketParsingTests, RawTCPStreamLength ) {
+
+    auto packet_data = shark::read_packets_from_file( "../packet_data/bitmap_over_http.txt" );
+
+    auto raw_stream = shark::extract_raw_tcp_stream( packet_data );
+
+    ASSERT_EQ( raw_stream.size(), 3 );
+}
+
 
 
 

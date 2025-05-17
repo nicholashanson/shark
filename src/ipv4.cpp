@@ -272,4 +272,43 @@ namespace shark {
 
         return std::vector<uint8_t>( data_start, data_start + chunk_size );
     }
+
+    std::vector<raw_tcp_frame> extract_raw_tcp_stream( const session& tcp_session ) {
+
+        std::vector<raw_tcp_frame> tcp_stream;
+
+        for ( auto& packet : tcp_session ) {
+
+            const unsigned char* packet_data = reinterpret_cast<const unsigned char*>( packet.data() );
+
+            auto ipv4_header = extract_ipv4_header( packet_data );
+            auto parsed_ipv4_header = parse_ipv4_header( ipv4_header );
+
+            auto header = extract_tcp_header( packet_data, parsed_ipv4_header.ihl );
+            auto body = extract_http_payload( packet_data );
+
+            if ( body.empty() ) {
+                continue;
+            }
+
+            raw_tcp_frame frame = {
+                .header = header,
+                .body = body
+            };
+
+            tcp_stream.push_back( frame );
+        }
+
+        return tcp_stream;
+    }
+
+    /*
+    tcp_stream get_tcp_stream( const raw_tcp_stream& stream ) {
+
+        for ( auto& tcp_frame : stream ) {
+
+            auto header_bytes = extract_tcp_header( tcp_header);  
+        }
+    } 
+    */
 } // namespace shark
