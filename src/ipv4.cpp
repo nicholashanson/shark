@@ -235,8 +235,10 @@ namespace shark {
 
         if ( first_five.compare( 0, 5, "HTTP/" ) == 0 ) {
             return http_type::RESPONSE; 
-        } else {
+        } else if ( first_five.compare( 0, 3, "GET" ) == 0 ) {
             return http_type::REQUEST;
+        } else {
+            return http_type::DATA;
         }
     }
 
@@ -302,13 +304,88 @@ namespace shark {
         return tcp_stream;
     }
 
-    /*
-    tcp_stream get_tcp_stream( const raw_tcp_stream& stream ) {
+    tcp_stream get_tcp_stream( const std::vector<raw_tcp_frame>& raw_stream ) {
 
-        for ( auto& tcp_frame : stream ) {
+        tcp_stream stream;
 
-            auto header_bytes = extract_tcp_header( tcp_header);  
+        for ( auto& tcp_frame : raw_stream ) {
+
+            auto parsed_tcp_header = parse_tcp_header( tcp_frame.header );
+
+            stream[ parsed_tcp_header.sequence_number ] = tcp_frame.body;
         }
+
+        return stream;
     } 
-    */
+
+    bool is_non_overlapping_stream( const tcp_stream& stream ) {
+
+        if ( stream.empty() ) return true;
+
+        uint32_t last_end_seq = 0;
+        bool first = true;
+
+        for ( const auto& [ seq, payload ] : stream ) {
+
+            uint32_t start_seq = seq;
+            uint32_t length = static_cast<uint32_t>( payload.size() );
+            uint32_t end_seq = start_seq + length;
+
+            if ( !first && start_seq < last_end_seq ) {
+                return false;
+            }
+
+            last_end_seq = end_seq;
+            first = false;
+        }
+        return true;
+    }
+
+    tcp_stream merge_tcp_stream_non_overlapping( const tcp_stream& stream ) {
+
+        tcp_stream merged;
+
+        uint32_t end_of_last = 0;
+
+        for (const auto& [ seq, data ] : stream) {
+            if ( seq >= end_of_last ) {
+                merged[ seq ] = data;
+                end_of_last = seq + data.size();
+            } else if ( seq + data.size() <= end_of_last ) {
+                continue;
+            } else {
+                size_t overlap = end_of_last - seq;
+                std::vector<uint8_t> trimmed( data.begin() + overlap, data.end() );
+                merged[ end_of_last ] = trimmed;
+                end_of_last += trimmed.size();
+            }
+        }
+
+        return merged;
+    }
+
+    std::vector<uint8_t> decode_chunked_http_body(const std::vector<uint8_t>& data) {
+            
+        std::vector<uint8_t> decoded;
+        size_t pos = 0;
+
+        while (pos < data.size()) {
+            // Find CRLF after chunk size
+            auto crlf = std::search(data.begin() + pos, data.end(), "\r\n", "\r\n" + 2);
+            if (crlf == data.end()) break;
+
+            std::string chunk_size_str(data.begin() + pos, crlf);
+            size_t chunk_size = std::stoul(chunk_size_str, nullptr, 16);
+            pos = crlf - data.begin() + 2;
+
+            if (chunk_size == 0) break;
+
+            if (pos + chunk_size > data.size()) break;
+            decoded.insert(decoded.end(), data.begin() + pos, data.begin() + pos + chunk_size);
+            pos += chunk_size + 2;  // skip CRLF after chunk
+        }
+
+        return decoded;
+    }
+
 } // namespace shark

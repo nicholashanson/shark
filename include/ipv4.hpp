@@ -35,7 +35,8 @@ namespace shark {
 
     enum class http_type {
         REQUEST,
-        RESPONSE
+        RESPONSE,
+        DATA
     };
 
     using http_headers = std::unordered_map<std::string,std::string>;
@@ -159,6 +160,14 @@ namespace shark {
     tcp_stream parce_tcp_stream( const raw_tcp_stream& raw_stream );
 
     std::vector<raw_tcp_frame> extract_raw_tcp_stream( const session& tcp_session );
+
+    tcp_stream get_tcp_stream( const std::vector<raw_tcp_frame>& raw_stream );
+
+    tcp_stream merge_tcp_stream_non_overlapping( const tcp_stream& stream );
+
+    bool is_non_overlapping_stream( const tcp_stream& stream );
+
+    std::vector<uint8_t> decode_chunked_http_body(const std::vector<uint8_t>& chunked_data);
     
 } // namespace shark
 

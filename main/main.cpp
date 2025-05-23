@@ -1,7 +1,4 @@
-#include <pcap.h>
-
-#include <iomanip>
-#include <iostream>
+#include <packet_capture.hpp>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -30,96 +27,11 @@ void print_mac_address( const unsigned char* mac ) {
     }
 }
 
-void packet_handler( unsigned char *user_data, 
-                     const struct pcap_pkthdr *pkthdr, 
-                     const unsigned char *packet) {
-
-    unsigned char dest_mac[ 6 ];
-    unsigned char src_mac[ 6 ];
-                        
-    std::copy( packet, packet + 6, dest_mac );
-    std::cout << "Destination MAC Address: ";
-    print_mac_address( dest_mac );  
-    std::cout << std::endl;
-                        
-    std::copy( packet + 6, packet + 12, src_mac );
-    std::cout << "Source MAC Address: ";
-    print_mac_address( src_mac );  
-    std::cout << std::endl;
-
-    std::cout << "Packet length: " << pkthdr->len << std::endl;
-    std::cout << "Timestamp: " 
-              << pkthdr->ts.tv_sec << "." 
-              << pkthdr->ts.tv_usec << std::endl;
-
-    std::cout << "First 16 bytes of packet data: ";
-    for ( int i = 0; i < pkthdr->len; i++ ) {
-        printf( "%02x ", packet[ i ] );
-    }
-    std::cout << std::endl;
-}
-
 int main() {
 
-    pcap_if_t *alldevs;
-    pcap_if_t *device;
-    char errbuf[ PCAP_ERRBUF_SIZE ];
+    const std::string filename = "../packet_data/lena.txt";
 
-    // Find all available devices
-    if ( pcap_findalldevs( &alldevs, errbuf ) == -1 ) {
-        std::cerr << "Error finding devices: " << errbuf << std::endl;
-        return 1;
-    }
-
-    std::cout << "Available devices:" << std::endl;
-    int i = 1;
-    for ( device = alldevs; device != NULL; device = device->next ) {
-        std::cout << i++ << ": " << device->name << " (" 
-                  << ( device->description ? device->description : "No description" ) 
-                  << ")" << std::endl;
-    }
-
-    // Select the device by number
-    int choice;
-    std::cout << "Select a device by number: ";
-    std::cin >> choice;
-
-    // Navigate to the selected device
-    device = alldevs;
-    for ( int j = 1; j < choice; j++ ) {
-        device = device->next;
-    }
-
-    // Open the device for packet capture
-    pcap_t *handle = pcap_open_live( device->name, BUFSIZ, 1, 1000, errbuf );
-    if ( handle == NULL ) { ( the end goal is to )
-        std::cerr << "Error opening device: " << errbuf << std::endl;
-        return 1;
-    }
-
-    // Apply a filter to capture only packets on port 3000 (for TCP)
-    struct bpf_program fp; // Compiled filter
-    const char *filter_exp = "tcp port 3000";  // Filter expression for port 3000 (TCP)
-    if ( pcap_compile( handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN ) == -1 ) {
-        std::cerr << "Error compiling filter: " << pcap_geterr( handle ) << std::endl;
-        return 1;
-    }
-
-    if ( pcap_setfilter( handle, &fp ) == -1 ) {
-        std::cerr << "Error setting filter: " << pcap_geterr( handle ) << std::endl;
-        return 1;
-    }
-
-    std::cout << "Successfully opened device: " << device->name << std::endl;
-
-    // No filter; capture all packets
-    std::cout << "Capturing all packets... Press Ctrl+C to stop." << std::endl;
-    if ( pcap_loop( handle, 0, packet_handler, NULL ) < 0 ) {
-        std::cerr << "Error capturing packets: " << pcap_geterr( handle ) << std::endl;
-    }
-
-    pcap_close( handle );
-    pcap_freealldevs( alldevs );
+    shark::capture_packets( filename );
 
     return 0;
 }

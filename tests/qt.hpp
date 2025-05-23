@@ -23,4 +23,32 @@ namespace test {
         app.exec();
     }
 
-}
+    void show_bitmap_in_qt_window( const std::vector<uint8_t>& bmp_data ) {
+
+        int argc = 0;
+        char** argv = nullptr;
+        QApplication app( argc, argv );
+
+        QImage image = QImage::fromData( reinterpret_cast<const uchar*>( bmp_data.data() ), bmp_data.size(), "BMP" );
+
+        if ( image.isNull() ) {
+            QLabel label( "Failed to load image." );
+            label.setWindowTitle( "Bitmap Viewer - Error" );
+            label.resize( 400, 100 );
+            label.show();
+            QTimer::singleShot( 3000, &app, &QApplication::quit );
+            app.exec();
+            return;
+        }
+
+        QLabel label;
+        label.setPixmap( QPixmap::fromImage( image ) );
+        label.setWindowTitle( "Bitmap Viewer" );
+        label.resize( image.width() * 4, image.height() * 4 );
+        label.show();
+
+        QTimer::singleShot( 3000, &app, &QApplication::quit );
+        app.exec();
+    }
+
+} // test
