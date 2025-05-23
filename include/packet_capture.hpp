@@ -3,6 +3,8 @@
 
 #include <pcap.h>
 
+#include <constants.hpp>
+
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -77,9 +79,8 @@ namespace shark {
     // Opens the selected device and returns a handle or nullptr on failure
     inline pcap_t* open_device(pcap_if_t *device) {
     
-        const int MAX_SNAPLEN = 65535;
         char errbuf[PCAP_ERRBUF_SIZE];
-        pcap_t *handle = pcap_open_live(device->name, MAX_SNAPLEN, 1, 1000, errbuf);
+        pcap_t *handle = pcap_open_live(device->name, constants::max_snap_len, 1, 1000, errbuf);
         if (!handle) {
             std::cerr << "Error opening device: " << errbuf << std::endl;
         }
