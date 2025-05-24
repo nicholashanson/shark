@@ -14,6 +14,9 @@ TEST_DIR="$SCRIPT_DIR/../tests"
 # Find all .cpp files in src
 SRC_FILES=$(find "$SRC_DIR" -name '*.cpp')
 
+# Find all .cpp files in tests
+TEST_FILES=$(find "$TEST_DIR" -name '*.cpp')
+
 # Compile main application
 g++ -g -O0 -std=c++23 "$SCRIPT_DIR/main.cpp" \
     $SRC_FILES \
@@ -21,10 +24,13 @@ g++ -g -O0 -std=c++23 "$SCRIPT_DIR/main.cpp" \
     -lpcap
     
 # Compile test application
-g++ -g -O0 -std=c++23 -fPIC "$TEST_DIR/test_ipv4_header_extraction.cpp" \
+g++ -g -O0 -std=c++23 -fPIC \
+    $TEST_FILES \
     $SRC_FILES \
     `pkg-config --cflags --libs Qt5Widgets` \
+    -I"$TEST_DIR" \
     -I"$SCRIPT_DIR/../include" -L"$SCRIPT_DIR/../lib" \
     -lgtest -lgtest_main -o shark_tests
+
 
 echo "Build complete."

@@ -76,6 +76,10 @@ namespace shark {
         return r_line;
     }
 
+    bool contains_http_header( const http_headers& headers, const std::string& header_name  ) {
+        return headers.contains( header_name );
+    }  
+
     http_headers parse_http_headers(const std::vector<uint8_t>& header_bytes) {
         
         std::string headers_string( header_bytes.begin(), header_bytes.end() );
@@ -107,6 +111,12 @@ namespace shark {
         }
 
         return headers;
+    }
+
+    http_headers get_http_headers_from_payload( const std::vector<uint8_t>& http_payload_bytes ) {
+
+        auto http_header_bytes = std::get<1>( split_http_payload( http_payload_bytes ) );
+        return parse_http_headers( http_header_bytes );
     }
 
     http_response_status_line parse_http_status_line( const std::vector<uint8_t>& status_line_bytes ) {
@@ -165,5 +175,20 @@ namespace shark {
 
         return decoded;
     }
+
+    std::vector<uint8_t> get_first_http_respone( const session& packet_data ) {
+
+        auto raw_tcp_stream = extract_raw_tcp_stream( packet_data );
+        auto tcp_stream = get_tcp_stream( raw_tcp_stream ); 
+
+        auto response = *std::find_if( tcp_stream.begin(), tcp_stream.end(), 
+            []( const auto& pair ) { 
+                auto& [ unused, http_payload ] = pair;
+                return shark::get_http_type( http_payload ) == shark::http_type::RESPONSE;
+            } 
+        );
+
+        return response.second;
+    }   
 
 } // namespace shark

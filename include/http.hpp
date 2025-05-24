@@ -11,6 +11,7 @@
 #include <vector>
 #include <sstream>
 
+#include <tcp.hpp>
 #include <utils.hpp>
 
 namespace shark {
@@ -59,6 +60,8 @@ namespace shark {
     */
     http_request_line parse_http_request_line( const std::vector<uint8_t>& request_line_bytes );
 
+    bool contains_http_header( const http_headers& headers, const std::string& header_name );
+
     /*
         parse the status line from a http response
     */
@@ -69,6 +72,7 @@ namespace shark {
     */
     http_headers parse_http_headers( const std::vector<uint8_t>& header_bytes );
 
+    http_headers get_http_headers_from_payload( const std::vector<uint8_t>& http_payload_bytes );
     /*
         determine if a http payload is a http request, a http respense or raw data
     */
@@ -78,6 +82,7 @@ namespace shark {
 
     std::vector<uint8_t> decode_chunked_http_body( const std::vector<uint8_t>& chunked_body );
 
+    std::vector<uint8_t> get_first_http_respone( const session& packet_data );
 }
 
 #endif
