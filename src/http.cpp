@@ -6,7 +6,6 @@ namespace shark {
 
         std::string first_five( http_payload.begin(), http_payload.begin() + 5 );
 
-
         if ( first_five.compare( 0, 5, "HTTP/" ) == 0 ) {
             return http_type::RESPONSE; 
         } else if ( first_five.compare( 0, 3, "GET" ) == 0 ) {
@@ -190,5 +189,35 @@ namespace shark {
 
         return response.second;
     }   
+
+    std::vector<uint8_t> get_http_response_data( const tcp_stream& stream ) {
+
+        auto response_pos = std::find_if( stream.begin(), stream.end(), 
+            []( const auto& pair ) { 
+                auto& [ unused, http_payload ] = pair;
+                return shark::get_http_type( http_payload ) == shark::http_type::RESPONSE;
+            } 
+        );
+
+        auto response = *response_pos;
+
+        auto http_headers = get_http_headers_from_payload( response.second );
+
+        auto response_data = std::get<2>( split_http_payload( response.second ) );
+
+        auto it = std::next( response_pos );
+
+        while ( it != stream.end() ) {
+            response_data.insert( response_data.end(),
+                it->second.begin(), it->second.end() );
+            ++it;
+        }
+
+        if ( contains_http_header( http_headers, "Content-Length" ) ) {
+            return response_data;
+        } else {
+            return decode_chunked_http_body( response_data );
+        }
+    }
 
 } // namespace shark

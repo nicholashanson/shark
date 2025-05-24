@@ -73,7 +73,7 @@ namespace shark {
     http_headers parse_http_headers( const std::vector<uint8_t>& header_bytes );
 
     http_headers get_http_headers_from_payload( const std::vector<uint8_t>& http_payload_bytes );
-    /*
+    /*stats
         determine if a http payload is a http request, a http respense or raw data
     */
     http_type get_http_type( const std::vector<uint8_t>& http_payload );
@@ -83,6 +83,8 @@ namespace shark {
     std::vector<uint8_t> decode_chunked_http_body( const std::vector<uint8_t>& chunked_body );
 
     std::vector<uint8_t> get_first_http_respone( const session& packet_data );
+
+    std::vector<uint8_t> get_http_response_data( const tcp_stream& stream );
 }
 
 #endif

@@ -117,9 +117,7 @@ namespace shark {
         tcp_stream stream;
 
         for ( auto& tcp_frame : raw_stream ) {
-
             auto parsed_tcp_header = parse_tcp_header( tcp_frame.header );
-
             stream[ parsed_tcp_header.sequence_number ] = tcp_frame.body;
         }
 
@@ -170,6 +168,13 @@ namespace shark {
         }
 
         return merged;
+    }
+
+    tcp_stream get_merged_tcp_stream( const session& packet_data ) {
+        auto raw_stream = extract_raw_tcp_stream( packet_data );
+        auto tcp_stream = get_tcp_stream( raw_stream );
+        auto merged_tcp_stream = merge_tcp_stream_non_overlapping( tcp_stream );
+        return merged_tcp_stream;
     }
 
 } // namespace shark

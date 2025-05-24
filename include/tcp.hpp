@@ -7,6 +7,10 @@
 #include <vector>
 #include <map>
 
+namespace shark {
+    using tcp_stream = std::map<uint32_t,std::vector<uint8_t>>; 
+}
+
 #include <ipv4.hpp>
 #include <http.hpp>
 #include <utils.hpp>
@@ -19,8 +23,6 @@ namespace shark {
     };
 
     using raw_tcp_stream = std::vector<std::vector<uint8_t>>;
-
-    using tcp_stream = std::map<uint32_t,std::vector<uint8_t>>; 
 
     struct tcp_option {
         uint8_t type;
@@ -71,6 +73,8 @@ namespace shark {
     tcp_stream get_tcp_stream( const std::vector<raw_tcp_frame>& raw_stream );
 
     tcp_stream merge_tcp_stream_non_overlapping( const tcp_stream& stream );
+
+    tcp_stream get_merged_tcp_stream( const session& packet_data ); 
 
 } // namespace shark
 
