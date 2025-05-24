@@ -1,3 +1,6 @@
+#ifndef QT_HPP
+#define QT_HPP
+
 #include <QApplication>
 #include <QLabel>
 #include <QString>
@@ -5,7 +8,7 @@
 
 namespace test {
 
-    void show_text_in_qt_window( const QString& text ) {
+    inline void show_text_in_qt_window( const QString& text ) {
 
         int argc = 0;
         char** argv = nullptr;
@@ -23,7 +26,7 @@ namespace test {
         app.exec();
     }
 
-    void show_bitmap_in_qt_window( const std::vector<uint8_t>& bmp_data ) {
+    inline void show_bitmap_in_qt_window( const std::vector<uint8_t>& bmp_data ) {
 
         int argc = 0;
         char** argv = nullptr;
@@ -52,3 +55,5 @@ namespace test {
     }
 
 } // test
+
+#endif
