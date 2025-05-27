@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include <test_constants.hpp>
+#include <test_tcp_handshake_packets.hpp>
 
 void print_vector( const std::vector<uint8_t>& data ) {
     for ( auto byte : data ) {
@@ -35,12 +35,12 @@ void print_tcp_options( const ntk::tcp_header& header ) {
 
 TEST( PacketParsingTests, TCPSyn ) {
 
-    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test::tcp_syn_packet );
+    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test_constants::tcp_syn_packet );
     ntk::ipv4_header header = ntk::parse_ipv4_header( ipv4_header );
 
     ASSERT_EQ( header.protocol, static_cast<unsigned char>( ntk::protocol::TCP ) );
 
-    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test::tcp_syn_packet, header.ihl );
+    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test_constants::tcp_syn_packet, header.ihl );
     ntk::tcp_header actual_header = ntk::parse_tcp_header( tcp_bytes );
 
     ntk::tcp_header expected_header = {
@@ -66,12 +66,12 @@ TEST( PacketParsingTests, TCPSyn ) {
 
 TEST( PacketParsingTests, TCPSynAck ) {
 
-    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test::tcp_synack_packet );
+    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test_constants::tcp_synack_packet );
     ntk::ipv4_header header = ntk::parse_ipv4_header( ipv4_header );
 
     ASSERT_EQ( header.protocol, static_cast<unsigned char>( ntk::protocol::TCP ) );
 
-    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test::tcp_synack_packet, header.ihl );
+    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test_constants::tcp_synack_packet, header.ihl );
     ntk::tcp_header actual_header = ntk::parse_tcp_header( tcp_bytes );
 
     ntk::tcp_header expected_header = {
@@ -97,12 +97,12 @@ TEST( PacketParsingTests, TCPSynAck ) {
 
 TEST( PacketParsingTests, TCPAck ) {
 
-    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test::tcp_ack_packet );
+    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test_constants::tcp_ack_packet );
     ntk::ipv4_header header = ntk::parse_ipv4_header( ipv4_header );
 
     ASSERT_EQ( header.protocol, static_cast<unsigned char>( ntk::protocol::TCP ) );
 
-    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test::tcp_ack_packet, header.ihl );
+    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test_constants::tcp_ack_packet, header.ihl );
     ntk::tcp_header actual_header = ntk::parse_tcp_header( tcp_bytes );
 
     ntk::tcp_header expected_header = {
