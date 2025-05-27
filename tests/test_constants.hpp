@@ -3,6 +3,70 @@
 
 namespace test {
 
+    //inline const unsigned char http_partial_request[] = {}
+
+    inline const unsigned char mp4_meta_data[] = {
+
+        /* ftyp box ( file type box ) */
+        0x00, 0x00, 0x00, 0x20,                     // length : 32 bytes
+        0x66, 0x74, 0x79, 0x70,                     // ftyp
+        0x69, 0x73, 0x6f, 0x6d,                     // major brand : isom
+        0x00, 0x00, 0x02, 0x00,                     // minor version
+                                 
+        /* compatible brands */
+        0x69, 0x73, 0x6f, 0x6d,                     // isom: ISO Base Media File Format  
+        0x69, 0x73, 0x6f, 0x32,                     // iso2: ISO BMFF Version 2
+        0x61, 0x76, 0x63, 0x31,                     // avc1: AVC/H.264 video
+        0x6d, 0x70, 0x34, 0x31,                     // mp41: MPEG-4 version 1
+
+        /* moov Box */
+        0x00, 0x00, 0x00, 0x6c,                     // size: 108 bytes
+        0x6d, 0x6f, 0x6f, 0x76,                     // moov Box ( Movie Box )
+
+        0x6d, 0x76, 0x68, 0x64,                     // mvhd
+        0x00,                                       // version
+        0x00, 0x00, 0x00,                           // flags
+        0x00, 0x00, 0x00, 0x00,                     // creation time
+        0x00, 0x00, 0x00, 0x00,                     // modification time
+        0x00, 0x00, 0x03, 0xe8,                     // timescale = 1000
+        0x00, 0x02, 0x79, 0xe9,                     // duration = 162,153
+
+        /* rate ( 16.16 fixed ) = 1.0 */
+        0x00, 0x01, 0x00, 0x00,
+
+        /* volume ( 8.8 fixed ) = 1.0 */
+        0x01, 0x00,
+
+        /* reserved 2 bytes */
+        0x00, 0x00,
+
+        /* reserved 8 bytes ( 2 × 4 bytes ) */
+        0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00,
+
+        /* matrix structure ( 36 bytes ) */
+        0x00, 0x01, 0x00, 0x00,                     // [0][0] = 1.0
+        0x00, 0x00, 0x00, 0x00,                     // [0][1] = 0.0
+        0x00, 0x00, 0x00, 0x00,                     // [0][2] = 0.0
+        0x00, 0x01, 0x00, 0x00,                     // [1][0] = 1.0 
+        0x00, 0x00, 0x00, 0x00,                     // [1][1] = 0.0
+        0x00, 0x00, 0x00, 0x00,                     // [1][2] = 0.0
+        0x00, 0x00, 0x40, 0x00,                     // [2][0] = 16384 (fixed-point)
+        0x00, 0x00, 0x00, 0x00,                     // [2][1] = 0
+        0x00, 0x00, 0x00, 0x00,                     // [2][2] = 0
+
+        /* pre-defined ( reserved 24 bytes ) */
+        0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00,
+
+        /* next track ID */
+        0x00, 0x00, 0x03, 0x00
+    };
+
     inline const unsigned char tcp_syn_packet[] = {
         /* ethernet header */
         // destination mac address

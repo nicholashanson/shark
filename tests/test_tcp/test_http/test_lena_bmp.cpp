@@ -12,17 +12,17 @@
 
 TEST( PacketParsingTests, LenStreamNonOverlapping ) {
 
-    auto packet_data = shark::read_packets_from_file( "../packet_data/lena.txt" );
-    auto raw_stream = shark::extract_raw_tcp_stream( packet_data );
-    auto tcp_stream = shark::get_tcp_stream( raw_stream );
-    auto merged_tcp_stream = shark::merge_tcp_stream_non_overlapping( tcp_stream );
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/lena.txt" );
+    auto raw_stream = ntk::extract_raw_tcp_stream( packet_data );
+    auto tcp_stream = ntk::get_tcp_stream( raw_stream );
+    auto merged_tcp_stream = ntk::merge_tcp_stream_non_overlapping( tcp_stream );
 
-    ASSERT_TRUE( shark::is_non_overlapping_stream( merged_tcp_stream ) );
+    ASSERT_TRUE( ntk::is_non_overlapping_stream( merged_tcp_stream ) );
 }
 
 TEST( PacketParsingTests, LenStreamZeroChunk ) {
 
-    auto ends_with_zero_chunk = []( const shark::tcp_stream& stream ) -> bool {
+    auto ends_with_zero_chunk = []( const ntk::tcp_stream& stream ) -> bool {
 
         const auto& [ seq, data ] = *stream.rbegin();
 
@@ -35,41 +35,41 @@ TEST( PacketParsingTests, LenStreamZeroChunk ) {
         );
     };
 
-    auto packet_data = shark::read_packets_from_file( "../packet_data/lena.txt" );
-    auto raw_stream = shark::extract_raw_tcp_stream( packet_data );
-    auto tcp_stream = shark::get_tcp_stream( raw_stream );
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/lena.txt" );
+    auto raw_stream = ntk::extract_raw_tcp_stream( packet_data );
+    auto tcp_stream = ntk::get_tcp_stream( raw_stream );
     
     EXPECT_TRUE( ends_with_zero_chunk( tcp_stream ) ) << "Last TCP segment does not end with the zero chunk.";
 
-    auto merged_tcp_stream = shark::merge_tcp_stream_non_overlapping( tcp_stream );
+    auto merged_tcp_stream = ntk::merge_tcp_stream_non_overlapping( tcp_stream );
 
     EXPECT_TRUE( ends_with_zero_chunk( merged_tcp_stream ) ) << "Last TCP segment does not end with the zero chunk.";
 }
 
 TEST( PacketParsingTests, LenaVisualTest ) {
 
-    auto packet_data = shark::read_packets_from_file( "../packet_data/lena.txt" );
-    auto raw_stream = shark::extract_raw_tcp_stream( packet_data );
-    auto tcp_stream = shark::get_tcp_stream( raw_stream );
-    auto merged_tcp_stream = shark::merge_tcp_stream_non_overlapping( tcp_stream );
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/lena.txt" );
+    auto raw_stream = ntk::extract_raw_tcp_stream( packet_data );
+    auto tcp_stream = ntk::get_tcp_stream( raw_stream );
+    auto merged_tcp_stream = ntk::merge_tcp_stream_non_overlapping( tcp_stream );
 
     std::vector<uint8_t> lena_image;
 
     for ( auto& [ sequence_number, tcp_body ] : merged_tcp_stream ) {
 
-        if ( shark::get_http_type( tcp_body ) == shark::http_type::REQUEST ) {
+        if ( ntk::get_http_type( tcp_body ) == ntk::http_type::REQUEST ) {
             continue;
         }
 
-        if ( shark::get_http_type( tcp_body ) == shark::http_type::RESPONSE ) {
-            auto [ status_line, headers, body ] = shark::split_http_payload( tcp_body );
+        if ( ntk::get_http_type( tcp_body ) == ntk::http_type::RESPONSE ) {
+            auto [ status_line, headers, body ] = ntk::split_http_payload( tcp_body );
             tcp_body = body;
         } 
 
         lena_image.insert( lena_image.end(), tcp_body.begin(), tcp_body.end() );
     } 
 
-    auto decoded_lena_image = shark::decode_chunked_http_body( lena_image );
+    auto decoded_lena_image = ntk::decode_chunked_http_body( lena_image );
 
     std::ofstream out( "lena.bmp", std::ios::binary );
     out.write( reinterpret_cast<const char*>( decoded_lena_image.data() ), decoded_lena_image.size() );

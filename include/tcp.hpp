@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 
-namespace shark {
+namespace ntk {
     using tcp_stream = std::map<uint32_t,std::vector<uint8_t>>; 
 }
 
@@ -15,7 +15,7 @@ namespace shark {
 #include <http.hpp>
 #include <utils.hpp>
 
-namespace shark {
+namespace ntk {
 
     struct raw_tcp_frame {
         std::vector<uint8_t> header;
@@ -76,6 +76,6 @@ namespace shark {
 
     tcp_stream get_merged_tcp_stream( const session& packet_data ); 
 
-} // namespace shark
+} // namespace ntk
 
 #endif

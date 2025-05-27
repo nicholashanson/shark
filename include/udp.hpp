@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace shark {
+namespace ntk {
 
     struct udp_header {
         uint16_t source_port;

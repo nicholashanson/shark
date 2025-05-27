@@ -18,7 +18,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace shark {
+namespace ntk {
 
     enum class protocol : uint8_t {
         TCP = 0x06,
@@ -56,6 +56,6 @@ namespace shark {
 
     bool is_ipv4( const unsigned char* ethernet_frame );
     
-} // namespace shark
+} // namespace ntk
 
 #endif

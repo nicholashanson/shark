@@ -1,6 +1,6 @@
 #include <tcp.hpp>
 
-namespace shark {
+namespace ntk {
 
     std::vector<uint8_t> extract_tcp_header( const unsigned char* ethernet_frame,
                                              const size_t ipv4_header_len ) {
@@ -177,4 +177,4 @@ namespace shark {
         return merged_tcp_stream;
     }
 
-} // namespace shark
+} // namespace ntk

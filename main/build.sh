@@ -27,10 +27,9 @@ g++ -g -O0 -std=c++23 "$SCRIPT_DIR/main.cpp" \
 g++ -g -O0 -std=c++23 -fPIC \
     $TEST_FILES \
     $SRC_FILES \
-    `pkg-config --cflags --libs Qt5Widgets` \
+    `pkg-config --cflags --libs Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets` \
     -I"$TEST_DIR" \
     -I"$SCRIPT_DIR/../include" -L"$SCRIPT_DIR/../lib" \
     -lgtest -lgtest_main -o shark_tests
-
 
 echo "Build complete."

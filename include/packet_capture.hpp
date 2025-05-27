@@ -9,7 +9,7 @@
 #include <iostream>
 #include <fstream>
 
-namespace shark {
+namespace ntk {
 
     inline void packet_handler( unsigned char *user_data, 
                                 const struct pcap_pkthdr *pkthdr, 
@@ -144,7 +144,7 @@ namespace shark {
         pcap_freealldevs(device);
     }
 
-} // namespace shark
+} // namespace ntk
 
 #endif
 

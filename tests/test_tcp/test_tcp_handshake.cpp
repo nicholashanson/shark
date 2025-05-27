@@ -23,7 +23,7 @@ void print_tcp_stream_info(const std::map<uint32_t, std::vector<uint8_t>>& strea
     }
 }
 
-void print_tcp_options( const shark::tcp_header& header ) {
+void print_tcp_options( const ntk::tcp_header& header ) {
     for ( const auto& opt : header.options ) {
         std::cout << "Option kind: " << static_cast<int>( opt.type ) << " -> data bytes: ";
         for ( const auto& byte : opt.option ) {
@@ -35,15 +35,15 @@ void print_tcp_options( const shark::tcp_header& header ) {
 
 TEST( PacketParsingTests, TCPSyn ) {
 
-    std::vector<uint8_t> ipv4_header = shark::extract_ipv4_header( test::tcp_syn_packet );
-    shark::ipv4_header header = shark::parse_ipv4_header( ipv4_header );
+    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test::tcp_syn_packet );
+    ntk::ipv4_header header = ntk::parse_ipv4_header( ipv4_header );
 
-    ASSERT_EQ( header.protocol, static_cast<unsigned char>( shark::protocol::TCP ) );
+    ASSERT_EQ( header.protocol, static_cast<unsigned char>( ntk::protocol::TCP ) );
 
-    std::vector<uint8_t> tcp_bytes = shark::extract_tcp_header( test::tcp_syn_packet, header.ihl );
-    shark::tcp_header actual_header = shark::parse_tcp_header( tcp_bytes );
+    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test::tcp_syn_packet, header.ihl );
+    ntk::tcp_header actual_header = ntk::parse_tcp_header( tcp_bytes );
 
-    shark::tcp_header expected_header = {
+    ntk::tcp_header expected_header = {
         .source_port = 44056,                    
         .destination_port = 3000,                
         .sequence_number = 0xb920c9b3,           
@@ -66,15 +66,15 @@ TEST( PacketParsingTests, TCPSyn ) {
 
 TEST( PacketParsingTests, TCPSynAck ) {
 
-    std::vector<uint8_t> ipv4_header = shark::extract_ipv4_header( test::tcp_synack_packet );
-    shark::ipv4_header header = shark::parse_ipv4_header( ipv4_header );
+    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test::tcp_synack_packet );
+    ntk::ipv4_header header = ntk::parse_ipv4_header( ipv4_header );
 
-    ASSERT_EQ( header.protocol, static_cast<unsigned char>( shark::protocol::TCP ) );
+    ASSERT_EQ( header.protocol, static_cast<unsigned char>( ntk::protocol::TCP ) );
 
-    std::vector<uint8_t> tcp_bytes = shark::extract_tcp_header( test::tcp_synack_packet, header.ihl );
-    shark::tcp_header actual_header = shark::parse_tcp_header( tcp_bytes );
+    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test::tcp_synack_packet, header.ihl );
+    ntk::tcp_header actual_header = ntk::parse_tcp_header( tcp_bytes );
 
-    shark::tcp_header expected_header = {
+    ntk::tcp_header expected_header = {
         .source_port = 3000,                                                // 0x0bb8
         .destination_port = 44056,                                          // 0xac18
         .sequence_number = 0xd3c1ea09,           
@@ -97,15 +97,15 @@ TEST( PacketParsingTests, TCPSynAck ) {
 
 TEST( PacketParsingTests, TCPAck ) {
 
-    std::vector<uint8_t> ipv4_header = shark::extract_ipv4_header( test::tcp_ack_packet );
-    shark::ipv4_header header = shark::parse_ipv4_header( ipv4_header );
+    std::vector<uint8_t> ipv4_header = ntk::extract_ipv4_header( test::tcp_ack_packet );
+    ntk::ipv4_header header = ntk::parse_ipv4_header( ipv4_header );
 
-    ASSERT_EQ( header.protocol, static_cast<unsigned char>( shark::protocol::TCP ) );
+    ASSERT_EQ( header.protocol, static_cast<unsigned char>( ntk::protocol::TCP ) );
 
-    std::vector<uint8_t> tcp_bytes = shark::extract_tcp_header( test::tcp_ack_packet, header.ihl );
-    shark::tcp_header actual_header = shark::parse_tcp_header( tcp_bytes );
+    std::vector<uint8_t> tcp_bytes = ntk::extract_tcp_header( test::tcp_ack_packet, header.ihl );
+    ntk::tcp_header actual_header = ntk::parse_tcp_header( tcp_bytes );
 
-    shark::tcp_header expected_header = {
+    ntk::tcp_header expected_header = {
         .source_port = 44056,                                           // 0xac18
         .destination_port = 3000,                                       // 0x0bb8
         .sequence_number = 0xb920c9b4,             

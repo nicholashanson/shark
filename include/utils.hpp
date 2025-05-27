@@ -8,7 +8,7 @@
 #include <string>
 #include <cstdint>
 
-namespace shark {
+namespace ntk {
 
     /*
         a "session" is a series of packets that together make-up some kind of communication

@@ -14,7 +14,7 @@
 #include <tcp.hpp>
 #include <utils.hpp>
 
-namespace shark {
+namespace ntk {
 
     using http_headers = std::unordered_map<std::string,std::string>;
 

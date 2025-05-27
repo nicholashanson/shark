@@ -1,6 +1,6 @@
 #include <http.hpp>
 
-namespace shark {
+namespace ntk {
 
     http_type get_http_type( const std::vector<uint8_t>& http_payload ) {
 
@@ -183,7 +183,7 @@ namespace shark {
         auto response = *std::find_if( tcp_stream.begin(), tcp_stream.end(), 
             []( const auto& pair ) { 
                 auto& [ unused, http_payload ] = pair;
-                return shark::get_http_type( http_payload ) == shark::http_type::RESPONSE;
+                return ntk::get_http_type( http_payload ) == ntk::http_type::RESPONSE;
             } 
         );
 
@@ -195,7 +195,7 @@ namespace shark {
         auto response_pos = std::find_if( stream.begin(), stream.end(), 
             []( const auto& pair ) { 
                 auto& [ unused, http_payload ] = pair;
-                return shark::get_http_type( http_payload ) == shark::http_type::RESPONSE;
+                return ntk::get_http_type( http_payload ) == ntk::http_type::RESPONSE;
             } 
         );
 
@@ -220,4 +220,4 @@ namespace shark {
         }
     }
 
-} // namespace shark
+} // namespace ntk

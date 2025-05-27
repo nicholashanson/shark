@@ -1,7 +1,7 @@
 
 #include <ipv4.hpp>
 
-namespace shark {
+namespace ntk {
 
     std::vector<uint8_t> extract_ipv4_header( const unsigned char* ethernet_frame ) {
 
@@ -24,4 +24,4 @@ namespace shark {
         return header;
     }
 
-} // namespace shark
+} // namespace ntk

@@ -29,9 +29,9 @@ void print_mac_address( const unsigned char* mac ) {
 
 int main() {
 
-    const std::string filename = "../packet_data/color.txt";
+    const std::string filename = "../packet_data/algeria.txt";
 
-    shark::capture_packets( filename );
+    ntk::capture_packets( filename );
 
     return 0;
 }

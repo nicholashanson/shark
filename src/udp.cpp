@@ -1,6 +1,6 @@
 #include <udp.hpp>
 
-namespace shark {
+namespace ntk {
 
     std::array<uint8_t,constants::udp_header_len> extract_udp_header( const unsigned char* ethernet_frame, 
                                                                       const size_t ipv4_header_len ) {
@@ -17,4 +17,4 @@ namespace shark {
         return header;
     }
 
-} // namespace shark
+} // namespace ntk

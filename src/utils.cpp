@@ -1,6 +1,6 @@
 #include <utils.hpp>
 
-namespace shark {
+namespace ntk {
 
     std::string trim( const std::string& str ) {
         

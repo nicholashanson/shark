@@ -4,7 +4,7 @@
 
 TEST( PacketParsingTests, TCPStreamMerging ) {
 
-    shark::tcp_stream overlapping_stream = {
+    ntk::tcp_stream overlapping_stream = {
         { 1000, { 'A', 'B', 'C', 'D' } },    
         { 1004, { 'E', 'F', 'G' } },          
         { 1002, { 'C', 'D', 'E', 'F' } },     
@@ -12,9 +12,9 @@ TEST( PacketParsingTests, TCPStreamMerging ) {
         { 1003, { 'D', 'E', 'F' } }            
     };
 
-    shark::tcp_stream actual_merged_stream = shark::merge_tcp_stream_non_overlapping( overlapping_stream );
+    ntk::tcp_stream actual_merged_stream = ntk::merge_tcp_stream_non_overlapping( overlapping_stream );
 
-    shark::tcp_stream expected_merged_stream = {
+    ntk::tcp_stream expected_merged_stream = {
         { 1000, { 'A', 'B', 'C', 'D' } },
         { 1004, { 'E', 'F' } },
         { 1006, { 'G' } },

@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-namespace shark {
+namespace ntk {
 
     namespace constants {
 
@@ -16,6 +16,6 @@ namespace shark {
     
     } // namespace constants
 
-} // namespace shark
+} // namespace ntk
 
 #endif
