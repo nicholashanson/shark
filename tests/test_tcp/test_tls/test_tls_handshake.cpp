@@ -57,24 +57,32 @@ TEST( PacketParsingTests, TLSRecordSplitting ) {
     std::vector<uint8_t> remainder( first_packet + first_offset, first_packet + sizeof( first_packet ) );
     remainder.insert( remainder.end(), second_packet, second_packet + sizeof( second_packet ) );
 
-    auto [ second_records, second_offset ] = *ntk::split_tls_records(remainder);
+    auto [ second_records, second_offset ] = *ntk::split_tls_records( remainder );
 
     ASSERT_EQ( second_records.size(), 1 );
     ASSERT_EQ( second_offset, 9 );
 }
 
-
-/*
-TEST( PacketParsingTests, TLSRecordSplitting ) {
+TEST( PacketParsingTests, TLSRecordSplittingPackets ) {
 
     auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
-    auto tls_response = ntk::extract_payload_from_ethernet( packet_data[ 5 ].data() );
+    auto merged_stream = ntk::get_merged_tcp_stream( packet_data );
 
-    auto tls_response_span = std::span<const unsigned char>( tls_response );
+    auto first_packet_pos = merged_stream.begin();
+    auto first_packet = first_packet_pos->second;
+    
+    auto second_packet_pos = std::next( first_packet_pos );
+    auto second_packet = second_packet_pos->second;
 
-    std::cout << "about to split records" << std::endl;
-    auto tls_records = ntk::split_tls_records( tls_response_span );
+    auto [ first_records, first_offset ] = *ntk::split_tls_records( 
+        std::span( first_packet.data(), first_packet.size() ) );
 
-    std::cout << tls_records->size();
+    ASSERT_EQ( first_records.size(), 2 );
+
+    std::vector<uint8_t> remainder( first_packet.data() + first_offset, first_packet.data() + first_packet.size() );
+    remainder.insert( remainder.end(), second_packet.data(), second_packet.data() + second_packet.size() );
+
+    auto [ second_records, second_offset ] = *ntk::split_tls_records( remainder );
+    
+    ASSERT_EQ( second_records.size(), 1 );
 }
-*/
