@@ -56,7 +56,7 @@ namespace test_constants {
         0x00, 0x00, 
 
         /* tcp options */                                               /* tcp options */
-        0x02, 0x04, 0x05, 0xb4,                                         // maximum segment size (MSS) = 1460
+        0x02, 0x04, 0x05, 0xb4,                                         // maximum segment size ( MSS ) = 1460
         0x04, 0x02,                                                     // selective acknowledgment permitted
         0x08, 0x0a, 0x02, 0x0d, 0x72, 0x64, 0x00, 0x00, 0x00, 0x00,     // timestamp option
         0x01,                                                           // no operation

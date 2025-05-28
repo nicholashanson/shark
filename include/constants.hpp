@@ -2,8 +2,22 @@
 #define CONSTANTS_HPP
 
 #include <cstddef>
+#include <cstdint>
+
+#include <map>
+#include <vector>
 
 namespace ntk {
+
+    using tcp_stream = std::map<uint32_t,std::vector<uint8_t>>; 
+
+    /*
+        a "session" is a series of packets that together make-up some kind of communication
+        or data-transfer
+        
+        e.g. transfer of an image using http over tcp
+    */
+    using session = std::vector<std::vector<uint8_t>>;
 
     namespace constants {
 

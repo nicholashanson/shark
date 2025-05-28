@@ -5,7 +5,7 @@
 
 namespace ntk {
 
-    struct file_tpe_box {]
+    struct file_type_box {]
         uint32_t length;
         uint32_t type;
         uint32_t major_brand;

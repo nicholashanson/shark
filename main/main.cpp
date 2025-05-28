@@ -29,7 +29,7 @@ void print_mac_address( const unsigned char* mac ) {
 
 int main() {
 
-    const std::string filename = "../packet_data/algeria.txt";
+    const std::string filename = "../packet_data/earth_cam_live_stream.txt";
 
     ntk::capture_packets( filename );
 

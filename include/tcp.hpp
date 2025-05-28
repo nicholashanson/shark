@@ -7,13 +7,8 @@
 #include <vector>
 #include <map>
 
-namespace ntk {
-    using tcp_stream = std::map<uint32_t,std::vector<uint8_t>>; 
-}
-
 #include <ipv4.hpp>
-#include <http.hpp>
-#include <utils.hpp>
+#include <constants.hpp>
 
 namespace ntk {
 
@@ -75,6 +70,8 @@ namespace ntk {
     tcp_stream merge_tcp_stream_non_overlapping( const tcp_stream& stream );
 
     tcp_stream get_merged_tcp_stream( const session& packet_data ); 
+
+    std::vector<uint8_t> extract_payload_from_ethernet( const unsigned char* ethernet_frame );
 
 } // namespace ntk
 

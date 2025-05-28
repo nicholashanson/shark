@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include <tcp.hpp>
+#include <http.hpp>
 #include <utils.hpp>
 
 #include <test_constants.hpp>

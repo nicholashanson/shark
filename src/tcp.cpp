@@ -95,7 +95,7 @@ namespace ntk {
             auto parsed_ipv4_header = parse_ipv4_header( ipv4_header );
 
             auto header = extract_tcp_header( packet_data, parsed_ipv4_header.ihl );
-            auto body = extract_http_payload_from_ethernet( packet_data );
+            auto body = extract_payload_from_ethernet( packet_data );
 
             if ( body.empty() ) {
                 continue;
@@ -175,6 +175,34 @@ namespace ntk {
         auto tcp_stream = get_tcp_stream( raw_stream );
         auto merged_tcp_stream = merge_tcp_stream_non_overlapping( tcp_stream );
         return merged_tcp_stream;
+    }
+
+    std::vector<uint8_t> extract_payload_from_ethernet( const unsigned char* ethernet_frame ) {
+        
+        const size_t ethernet_header_len = 14;
+
+        uint8_t ihl = ethernet_frame[ ethernet_header_len ] & 0x0F;
+        size_t ipv4_header_len = ihl * 4;
+
+        uint16_t total_length = ( ethernet_frame[ ethernet_header_len + 2 ] << 8 ) |
+                                  ethernet_frame[ ethernet_header_len + 3 ];
+
+        size_t tcp_header_offset = ethernet_header_len + ipv4_header_len;
+
+        uint8_t data_offset_byte = ethernet_frame[ tcp_header_offset + 12 ];
+        size_t tcp_header_len = ( ( data_offset_byte >> 4 ) & 0x0F ) * 4;
+
+        uint16_t src_port = ( ethernet_frame[ tcp_header_offset ] << 8 ) | ethernet_frame[ tcp_header_offset + 1 ];
+        uint16_t dst_port = ( ethernet_frame[ tcp_header_offset + 2 ] << 8 ) | ethernet_frame[ tcp_header_offset + 3 ];
+
+        size_t payload_len = total_length - ipv4_header_len - tcp_header_len;
+
+        const uint8_t* payload_ptr = ethernet_frame + tcp_header_offset + tcp_header_len;
+
+        std::vector<uint8_t> payload( payload_len );
+        std::memcpy( payload.data(), payload_ptr, payload_len );
+
+        return payload;
     }
 
 } // namespace ntk

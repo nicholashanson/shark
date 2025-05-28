@@ -11,6 +11,11 @@
 
 namespace ntk {
 
+    inline const char* filters[] = {
+        "tcp port 3000",
+        "tcp port 443 and (host 104.22.21.231 or host 104.22.20.231 or host 172.67.10.24)"
+    };
+
     inline void packet_handler( unsigned char *user_data, 
                                 const struct pcap_pkthdr *pkthdr, 
                                 const unsigned char *packet ) {
@@ -33,9 +38,9 @@ namespace ntk {
 
         auto* file_handle = reinterpret_cast<std::ofstream*>( user_data );
 
-        for (int i = 0; i < pkthdr->len; ++i) {
+        for ( int i = 0; i < pkthdr->len; ++i ) {
             *file_handle << std::hex << std::setw( 2 ) 
-                        << std::setfill( '0' ) << static_cast<int>( packet[ i ] ) << " ";
+                         << std::setfill( '0' ) << static_cast<int>( packet[ i ] ) << " ";
         }
         *file_handle << std::endl;
     }
@@ -106,7 +111,8 @@ namespace ntk {
     // Starts the capture loop, returns 0 on success or error code
     inline int start_capture(pcap_t *handle, std::ofstream &file_handle) {
         std::cout << "Capturing packets... Press Ctrl+C to stop." << std::endl;
-        int ret = pcap_loop(handle, 0, write_packet_to_file, reinterpret_cast<u_char*>(&file_handle));
+        //int ret = pcap_loop(handle, 0, write_packet_to_file, reinterpret_cast<u_char*>(&file_handle));
+        int ret = pcap_loop(handle, 0, packet_handler, nullptr );
         if (ret < 0) {
             std::cerr << "Error capturing packets: " << pcap_geterr(handle) << std::endl;
         }
@@ -130,18 +136,18 @@ namespace ntk {
             return;
         }
 
-        if (!apply_filter(handle, "tcp port 3000")) {
-            pcap_close(handle);
-            pcap_freealldevs(device);
+        if (!apply_filter( handle, filters[ 1 ] ) ) {
+            pcap_close( handle );
+            pcap_freealldevs( device );
             return;
         }
 
         std::cout << "Successfully opened device: " << device->name << std::endl;
 
-        start_capture(handle, file_handle);
+        start_capture( handle, file_handle );
 
-        pcap_close(handle);
-        pcap_freealldevs(device);
+        pcap_close( handle );
+        pcap_freealldevs( device );
     }
 
 } // namespace ntk
