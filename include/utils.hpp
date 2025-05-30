@@ -29,6 +29,14 @@ namespace ntk {
         std::cout << std::dec << std::endl;
     }
 
+    template<size_t n>
+    void print_array( const std::array<uint8_t,n>& data ) {
+        for ( auto byte : data ) {
+            std::cout << std::hex << std::setw( 2 ) << std::setfill( '0' ) << static_cast<int>( byte ) << " ";
+        }
+        std::cout << std::dec << std::endl;
+    }
+
     inline void print_packet_array( const unsigned char* packet_data, const size_t packet_len ) {
         for ( size_t i = 0; i < packet_len; ++i ) {
             std::cout << std::hex << std::setw( 2 ) << std::setfill( '0' ) << static_cast<int>( packet_data[ i ] ) << " ";
