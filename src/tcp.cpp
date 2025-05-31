@@ -205,4 +205,15 @@ namespace ntk {
         return payload;
     }
 
+    bool is_tcp( const unsigned char* packet ) {
+
+        auto header = get_ipv4_header( packet );
+
+        return static_cast<protocol>( header.protocol ) == protocol::TCP;
+    }
+
+    bool is_tcp_v( const std::vector<uint8_t>& packet ) {
+        return is_tcp( packet.data() );
+    }
+
 } // namespace ntk

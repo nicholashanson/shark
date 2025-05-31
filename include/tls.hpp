@@ -21,7 +21,17 @@
 #include <openssl/evp.h>
 #include <openssl/kdf.h>
 
+#include <tcp.hpp>
+
 namespace ntk {
+
+    const std::array<std::string,5> tls_secret_labels = {
+        "SERVER_HANDSHAKE_TRAFFIC_SECRET",  
+        "EXPORTER_SECRET",
+        "SERVER_TRAFFIC_SECRET_0",  
+        "CLIENT_HANDSHAKE_TRAFFIC_SECRET",  
+        "CLIENT_TRAFFIC_SECRET_0"
+    };
 
     enum class tls_content_type : uint8_t {
         CHANGE_CIPHER_SEC = 0x14,
@@ -76,6 +86,8 @@ namespace ntk {
 
     secrets get_tls_secrets( const std::string& filename );
 
+    secrets get_tls_secrets( const std::string& filename, std::array<uint8_t,32> client_random );
+
     std::string client_random_to_hex( const std::array<uint8_t,32>& random );
 
     tls_key_material derive_tls_key_iv( const std::vector<uint8_t>& secret, const EVP_MD* hash_func,
@@ -96,6 +108,26 @@ namespace ntk {
                                              const std::string& label );
 
     std::vector<uint8_t> build_tls13_aad( tls_content_type content_type, uint16_t version, uint16_t length );
+
+    std::vector<uint8_t> extract_certificate( const std::vector<uint8_t>& handshake_payload );
+
+    bool is_tls( const unsigned char* packet );
+
+    bool is_tls_v( const std::vector<uint8_t>& packet );
+
+    bool is_client_hello( const unsigned char* packet );
+
+    bool is_client_hello_v( const std::vector<uint8_t>& packet );
+
+    bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs );
+
+    bool is_complete_secrets( const std::map<std::string,std::vector<uint8_t>>& secrets );
+
+    client_hello get_client_hello( const std::span<const uint8_t> tcp_payload );
+
+    client_hello get_client_hello_from_ethernet_frame( const unsigned char* ethernet_frame );
+
+    client_hello get_client_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame );
 
 } // namespace ntk
 

@@ -10,6 +10,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <sstream>
+#include <ranges>
 
 #include <cstdint>
 #include <cstring>
@@ -17,6 +18,8 @@
 #include <any>
 #include <optional>
 #include <stdexcept>
+
+#include <constants.hpp>
 
 namespace ntk {
 
@@ -46,6 +49,7 @@ namespace ntk {
         uint32_t destination_ip_addr;
     };
 
+    using sender_reciever = std::pair<uint32_t,uint32_t>;
 
     /*
         takes a raw ethernet frame and extracts the ipv4 header
@@ -53,6 +57,29 @@ namespace ntk {
     std::vector<uint8_t> extract_ipv4_header( const unsigned char* ethernet_frame );
 
     ipv4_header parse_ipv4_header( const std::vector<uint8_t>& raw_ipv4_header );
+
+    ipv4_header get_ipv4_header( const unsigned char* ethernet_frame );
+
+    sender_reciever get_sender_reciever( const unsigned char* ethernet_frame );
+
+    sender_reciever flip_sender_reciever( const sender_reciever& src_dest );
+
+    inline decltype(auto) filter_by_ip( const session& packets, const sender_reciever& src_dest ) {
+    
+        return std::views::all( packets ) | std::views::filter( [ & ] ( const auto& packet ) {
+            return get_sender_reciever( packet.data() ) == src_dest;
+        });
+    }
+
+    inline decltype(auto) filter_by_ip_duplex( const session& packets, const sender_reciever& src_dest ) {
+
+        auto dest_src = flip_sender_reciever( src_dest );
+    
+        return std::views::all( packets ) | std::views::filter( [ & ] ( const auto& packet ) {
+            auto ip_pair = get_sender_reciever( packet.data() );
+            return ip_pair == src_dest || ip_pair == dest_src;
+        });
+    }
 
     bool is_ipv4( const unsigned char* ethernet_frame );
     

@@ -73,6 +73,10 @@ namespace ntk {
 
     std::vector<uint8_t> extract_payload_from_ethernet( const unsigned char* ethernet_frame );
 
+    bool is_tcp( const unsigned char* packet );
+
+    bool is_tcp_v( const std::vector<uint8_t>& packet );
+
 } // namespace ntk
 
 #endif

@@ -36,6 +36,12 @@ namespace ntk {
         return c_hello;
     }
 
+    client_hello get_client_hello( const std::span<const uint8_t> tcp_payload ) {
+        
+        auto client_hello_bytes = tcp_payload.subspan( 9 );
+        return parse_client_hello( client_hello_bytes );
+    }
+
     server_hello parse_server_hello( const std::span<const uint8_t> server_hello_bytes ) {
 
         const size_t version_len = 2;
@@ -112,6 +118,8 @@ namespace ntk {
 
         while ( std::getline( file, line ) ) {
 
+            if ( line[ 0 ] == '#' ) continue;
+
             std::istringstream iss( line );
             std::string label;
             std::string client_random_hex;
@@ -133,6 +141,59 @@ namespace ntk {
         }
 
         return tls_secrets;
+    }
+
+    secrets get_tls_secrets( const std::string& filename, std::array<uint8_t,32> client_random ) {
+
+        auto client_random_h = client_random_to_hex( client_random );
+
+        secrets tls_secrets;
+
+        std::ifstream file( filename );
+        std::string line;
+
+        while ( std::getline( file, line ) ) {
+
+            if ( line[ 0 ] == '#' ) continue;
+
+            std::istringstream iss( line );
+            std::string label;
+            std::string client_random_hex;
+            std::string secret_hex;
+            iss >> label >> client_random_hex >> secret_hex;
+
+            secret_hex.erase( std::remove_if(secret_hex.begin(), secret_hex.end(),
+                []( unsigned char c ) {
+                    return !std::isxdigit( c );
+                }), secret_hex.end() );
+
+            std::vector<uint8_t> secret;
+
+            for ( size_t i = 0; i < secret_hex.size(); i += 2 ) {
+                secret.push_back( std::stoi( secret_hex.substr( i, 2 ), nullptr, 16 ) );
+            }
+
+            if ( client_random_hex == client_random_h ) 
+                tls_secrets[ client_random_hex ][ label ] = secret;
+
+            if ( is_complete_secrets( tls_secrets[ client_random_hex ] ) )
+                break;
+        }
+
+        return tls_secrets;
+    }
+
+    bool is_complete_secrets( const std::map<std::string,std::vector<uint8_t>>& secrets ) {
+
+        if ( secrets.size() != 5 ) return false;
+        std::array<std::string,5> labels;
+        size_t count = 0;
+
+        for ( auto [ label, secret ] : secrets ) {
+            labels[ count ] = label;
+            count += 1;
+        }
+        return secret_labels_are_equal( labels, tls_secret_labels );
     }
 
     std::string client_random_to_hex( const std::array<uint8_t,32>& random ) {
@@ -278,6 +339,124 @@ namespace ntk {
         }
 
         return result;
+    }
+
+    std::vector<uint8_t> extract_certificate( const std::vector<uint8_t>& handshake_payload ) {
+
+        size_t pos = 4; 
+
+        uint8_t context_len = handshake_payload[ pos++ ];
+        pos += context_len;
+
+        uint32_t cert_list_len = ( handshake_payload[ pos ] << 16 ) |
+                                 ( handshake_payload[ pos + 1 ] << 8 ) |
+                                   handshake_payload[ pos + 2 ];
+        pos += 3;
+
+        uint32_t cert_len = ( handshake_payload[ pos ] << 16 ) |
+                            ( handshake_payload[ pos + 1 ] << 8 ) |
+                              handshake_payload[ pos + 2 ];
+        pos += 3;
+
+        std::vector<uint8_t> cert( handshake_payload.begin() + pos,
+                                   handshake_payload.begin() + pos + cert_len );
+        return cert;
+    }
+
+    bool is_tls( const unsigned char* packet ) {
+
+        if ( !is_tcp( packet ) ) return false;
+        
+        auto tcp_payload = extract_payload_from_ethernet( packet );
+
+        if ( tcp_payload.size() == 0 ) return false;
+
+        uint8_t content_type = tcp_payload[ 0 ];
+        uint8_t major_version = tcp_payload[ 1 ];
+
+        if ( content_type < 20 || content_type > 23 ) return false; 
+        if ( major_version != 3 ) return false;
+
+        return true;
+    }
+    
+    bool is_tls_v( const std::vector<uint8_t>& packet ) {
+        return is_tls( packet.data() );
+    }
+
+    bool is_client_hello( const unsigned char* packet ) {
+
+        if ( !is_tls( packet ) ) return false;
+
+        auto tls_record = extract_payload_from_ethernet( packet );
+
+        uint8_t content_type = tls_record[ 0 ];
+        if ( content_type != 22 ) return false;
+
+        uint8_t handshake_type = tls_record[ 5 ];
+        return handshake_type == 1; 
+    }
+
+    bool is_client_hello_v( const std::vector<uint8_t>& packet ) {
+        return is_client_hello( packet.data() );
+    }
+
+    bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs ) {
+
+        std::sort( lhs.begin(), lhs.end() );
+        std::sort( rhs.begin(), rhs.end() );
+
+        return lhs == rhs;
+    }
+
+    bool has_sni( const client_hello& hello, const std::string& host ) {
+
+        const size_t extension_length_pos = 2;
+        const size_t sni_list_length_pos = 4;
+
+        auto extension_bytes = std::span<const unsigned char>( hello.extensions );
+
+        while ( !extension_bytes.empty() ) {
+
+            uint16_t extension_type = ( extension_bytes[ 0 ] << 8 ) | extension_bytes[ 1 ];
+            uint16_t extension_length = ( extension_bytes[ 2 ] << 8 ) | extension_bytes[ 3 ];
+
+            if ( extension_type == 0x0000 ) {
+
+                uint16_t sni_list_length = ( extension_bytes[ sni_list_length_pos ] << 8 ) | extension_bytes[ sni_list_length_pos + 1 ];
+
+                auto sni_list = extension_bytes.subspan( sni_list_length_pos + 2 );
+
+                while ( !sni_list.empty() ) {
+
+                    uint8_t name_type = sni_list[ 0 ];
+                    uint16_t name_length = ( sni_list[ 1 ] << 8 ) | sni_list[ 2 ];
+
+                    std::string server_name( sni_list.begin() + 3,
+                                             sni_list.begin() + 3 + name_length );
+
+                    if ( name_type == 0x00 && server_name == host ) {
+                        return true;
+                    }
+
+                    sni_list = sni_list.subspan( 3 + name_length );
+                }
+            }
+
+            extension_bytes = extension_bytes.subspan( 4 + extension_length );
+        }
+
+        return false;
+    }
+
+    client_hello get_client_hello_from_ethernet_frame( const unsigned char* ethernet_frame ) {
+
+        auto tcp_payload = std::span<const uint8_t>( extract_payload_from_ethernet( ethernet_frame ) );
+        return get_client_hello( tcp_payload );
+    }
+
+    client_hello get_client_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame ) {
+        return get_client_hello_from_ethernet_frame( ethernet_frame.data() );
     }
 
 } // namespace ntk

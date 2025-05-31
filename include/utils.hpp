@@ -61,6 +61,36 @@ namespace ntk {
         }
     }
 
+    std::vector<uint8_t> parse_hex_line( const std::string& line );
+
+    template<typename Filter>
+    std::vector<int> get_line_numbers( const std::string& filename, Filter&& filter ) {
+
+        std::ifstream file( filename );
+        std::vector<int> line_numbers;
+
+        if ( !file.is_open() ) {
+            std::cerr << "Failed to open file: " << filename << '\n';
+            return line_numbers;
+        }
+
+        std::string line;
+        int line_number = 0;
+
+        while ( std::getline( file, line ) ) {
+            line_number++;
+            std::vector<uint8_t> packet = parse_hex_line( line );
+            if ( filter( packet ) ) {
+                line_numbers.push_back( line_number );
+            }
+        }
+
+        return line_numbers;
+    }
+
+    std::vector<std::vector<uint8_t>> get_packets_by_line_numbers( const std::string& filename,
+                                                                   const std::vector<int>& line_numbers );
+
 }
 
 #endif
