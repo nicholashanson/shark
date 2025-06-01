@@ -17,14 +17,14 @@ namespace ntk {
         c_hello.session_id.resize( session_id_len );
         std::memcpy( c_hello.session_id.data(), &client_hello_bytes[ client_version_len + random_len + 1 ], session_id_len );
 
-        const size_t cipher_suites_len_pos = session_id_len_pos + session_id_len;
+        const size_t cipher_suites_len_pos = session_id_len_pos + 1 + session_id_len;
         const size_t cipher_suites_pos = cipher_suites_len_pos + 2;
         size_t cipher_suites_len = ( client_hello_bytes[ cipher_suites_len_pos ] << 8 ) | client_hello_bytes[ cipher_suites_len_pos + 1 ];
         c_hello.cipher_suites.resize( cipher_suites_len );
         std::memcpy( c_hello.cipher_suites.data(), &client_hello_bytes[ cipher_suites_pos ], cipher_suites_len );
         
         const size_t compression_methods_len_pos = cipher_suites_pos + cipher_suites_len;
-        const size_t compression_methods_len = client_hello_bytes[ cipher_suites_pos ];
+        const size_t compression_methods_len = client_hello_bytes[ compression_methods_len_pos ];
         c_hello.compression_methods.resize( compression_methods_len );
         std::memcpy( c_hello.compression_methods.data(), &client_hello_bytes[ compression_methods_len_pos + 1 ], compression_methods_len );
 
@@ -203,6 +203,13 @@ namespace ntk {
         return oss.str();
     }
 
+    std::string session_id_to_hex( const std::vector<uint8_t>& session_id ) {
+        std::ostringstream oss;
+        for ( auto byte : session_id )
+            oss << std::hex << std::setw( 2 ) << std::setfill( '0' ) << int( byte );
+        return oss.str();
+    }
+
     std::vector<uint8_t> get_traffic_secret( const secrets& session_keys,
                                              const std::array<uint8_t,32>& client_random,
                                              const std::string& label ) {
@@ -368,7 +375,6 @@ namespace ntk {
         if ( !is_tcp( packet ) ) return false;
         
         auto tcp_payload = extract_payload_from_ethernet( packet );
-
         if ( tcp_payload.size() == 0 ) return false;
 
         uint8_t content_type = tcp_payload[ 0 ];
@@ -409,7 +415,7 @@ namespace ntk {
         return lhs == rhs;
     }
 
-    bool has_sni( const client_hello& hello, const std::string& host ) {
+    std::expected<std::string,std::string> get_sni( const client_hello& hello ) {
 
         const size_t extension_length_pos = 2;
         const size_t sni_list_length_pos = 4;
@@ -418,26 +424,48 @@ namespace ntk {
 
         while ( !extension_bytes.empty() ) {
 
+            if ( extension_bytes.size() < 4 ) {
+                return std::unexpected( "Extension too short for header" );
+            }
+
             uint16_t extension_type = ( extension_bytes[ 0 ] << 8 ) | extension_bytes[ 1 ];
             uint16_t extension_length = ( extension_bytes[ 2 ] << 8 ) | extension_bytes[ 3 ];
 
+            if ( extension_bytes.size() < 4 + extension_length ) {
+                return std::unexpected( "Extension body truncated" );
+            }
+
             if ( extension_type == 0x0000 ) {
 
+                if ( extension_length < 2 ) {
+                    return std::unexpected( "SNI extension too short to contain list length" );
+                }
+
                 uint16_t sni_list_length = ( extension_bytes[ sni_list_length_pos ] << 8 ) | extension_bytes[ sni_list_length_pos + 1 ];
+
+                if ( sni_list_length > extension_length - 2 ) {
+                    return std::unexpected( "SNI list length exceeds bounds" );
+                }
 
                 auto sni_list = extension_bytes.subspan( sni_list_length_pos + 2 );
 
                 while ( !sni_list.empty() ) {
 
+                    if ( sni_list.size() < 3 ) {
+                        return std::unexpected( "SNI entry too short" );
+                    }
+
                     uint8_t name_type = sni_list[ 0 ];
                     uint16_t name_length = ( sni_list[ 1 ] << 8 ) | sni_list[ 2 ];
+
+                    if (sni_list.size() < 3 + name_length) {
+                        return std::unexpected( "Server name truncated" );
+                    }
 
                     std::string server_name( sni_list.begin() + 3,
                                              sni_list.begin() + 3 + name_length );
 
-                    if ( name_type == 0x00 && server_name == host ) {
-                        return true;
-                    }
+                    return server_name;
 
                     sni_list = sni_list.subspan( 3 + name_length );
                 }
@@ -446,11 +474,32 @@ namespace ntk {
             extension_bytes = extension_bytes.subspan( 4 + extension_length );
         }
 
-        return false;
+        return std::unexpected( "No sever name found" );
+    }
+
+    std::expected<bool,std::string> has_sni( const client_hello& hello, const std::string& host ) {
+
+        auto result = get_sni( hello );
+
+        if ( !result.has_value() ) {
+            return std::unexpected( result.error() );  
+        }
+
+        return result.value() == host;
+    }
+
+    std::expected<bool,std::string> sni_contains( const client_hello& hello, const std::string& host ) {
+
+        auto result = get_sni( hello );
+
+        if ( !result.has_value() ) {
+            return std::unexpected( result.error() );  
+        }
+
+        return result.value().contains( host );
     }
 
     client_hello get_client_hello_from_ethernet_frame( const unsigned char* ethernet_frame ) {
-
         auto tcp_payload = std::span<const uint8_t>( extract_payload_from_ethernet( ethernet_frame ) );
         return get_client_hello( tcp_payload );
     }

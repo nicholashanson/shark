@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <span>
 #include <cstdint>
 
@@ -236,7 +237,6 @@ TEST( PacketParsingTests, ClientHelloLineNumbers ) {
 TEST( LiveStreamTests, ClientHelloLineNumbers ) {
 
     auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/earth_cam_live_stream.txt", ntk::is_client_hello_v );
-
     auto client_hello_packets = ntk::get_packets_by_line_numbers( "../packet_data/earth_cam_live_stream.txt", client_hello_line_numbers );
 
     ASSERT_EQ( client_hello_line_numbers.size(), client_hello_packets.size() );
@@ -252,11 +252,44 @@ TEST( LiveStreamTests, ClientHelloLineNumbers ) {
     }
 }
 
+TEST( PacketParsingTests, HasSNI ) {
+
+    auto client_hello = ntk::get_client_hello_from_ethernet_frame( test_constants::tls_client_hello_packet );
+
+    ASSERT_TRUE( *ntk::has_sni( client_hello, "earthcam.com" ) );
+}
+
 TEST( PacketParsingTests, ClientHelloSNI ) {
 
-    auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/earth_cam_live_stream.txt", ntk::is_client_hello_v );
+    auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/tls_handshake.txt", ntk::is_client_hello_v );
+    auto client_hello_packets = ntk::get_packets_by_line_numbers( "../packet_data/tls_handshake.txt", client_hello_line_numbers );
 
-    auto client_hello_packets = ntk::get_packets_by_line_numbers( "../packet_data/earth_cam_live_stream.txt", client_hello_line_numbers );
+    ASSERT_EQ( client_hello_packets.size(), 1 );
 
     auto client_hello = ntk::get_client_hello_from_ethernet_frame( client_hello_packets[ 0 ] );
+
+    ASSERT_TRUE( *ntk::has_sni( client_hello, "earthcam.com" ) );
+}
+
+
+TEST( LiveStreamTests, ClientHelloSNI ) {
+
+    auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/earth_cam_live_stream.txt", ntk::is_client_hello_v );
+    auto client_hello_packets = ntk::get_packets_by_line_numbers( "../packet_data/earth_cam_live_stream.txt", client_hello_line_numbers );
+
+    std::vector<ntk::client_hello> client_hellos;
+
+    for ( auto& client_hello_packet : client_hello_packets ) {
+        auto tcp_payload = ntk::extract_payload_from_ethernet( client_hello_packet.data() );
+        auto client_hello = ntk::get_client_hello( tcp_payload );
+        client_hellos.push_back( client_hello );
+    }
+
+    bool found = false;
+    for ( const auto& client_hello : client_hellos ) {
+        auto result = ntk::sni_contains( client_hello, "earthcam" );
+        if ( *result ) found = true;
+    }   
+
+    ASSERT_TRUE( found );
 }

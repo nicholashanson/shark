@@ -90,6 +90,8 @@ namespace ntk {
 
     std::string client_random_to_hex( const std::array<uint8_t,32>& random );
 
+    std::string session_id_to_hex( const std::vector<uint8_t>& session_id );
+
     tls_key_material derive_tls_key_iv( const std::vector<uint8_t>& secret, const EVP_MD* hash_func,
                                         size_t key_len, size_t iv_len );
 
@@ -124,6 +126,12 @@ namespace ntk {
     bool is_complete_secrets( const std::map<std::string,std::vector<uint8_t>>& secrets );
 
     client_hello get_client_hello( const std::span<const uint8_t> tcp_payload );
+
+    std::expected<std::string,std::string> get_sni( const client_hello& hello );
+
+    std::expected<bool,std::string> has_sni( const client_hello& hello, const std::string& host );
+
+    std::expected<bool,std::string> sni_contains( const client_hello& hello, const std::string& host );
 
     client_hello get_client_hello_from_ethernet_frame( const unsigned char* ethernet_frame );
 
