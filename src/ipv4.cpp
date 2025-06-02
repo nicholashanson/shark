@@ -59,4 +59,20 @@ namespace ntk {
         return dest_src;
     }
 
+    std::string ip_to_string( uint32_t ip ) {
+        std::ostringstream oss;
+
+        uint8_t octet_1 = ( ip >> 24 ) & 0xff;
+        uint8_t octet_2 = ( ip >> 16 ) & 0xff;
+        uint8_t octet_3 = ( ip >> 8 )  & 0xff;
+        uint8_t octet_4 = ip & 0xff;
+
+        oss << static_cast<int>( octet_1 ) << "."
+            << static_cast<int>( octet_2 ) << "."
+            << static_cast<int>( octet_3 ) << "."
+            << static_cast<int>( octet_4 );
+
+        return oss.str();
+    }
+
 } // namespace ntk

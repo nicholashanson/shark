@@ -60,6 +60,16 @@ namespace ntk {
 
     ipv4_header get_ipv4_header( const unsigned char* ethernet_frame );
 
+    struct ipv4_filter {
+        uint32_t ip_addr;
+
+        bool operator()( const std::vector<uint8_t>& packet ) const {
+            auto header = get_ipv4_header( packet.data() );
+            
+            return ( header.source_ip_addr == ip_addr ) || ( header.destination_ip_addr == ip_addr );
+        }
+    };
+
     sender_reciever get_sender_reciever( const unsigned char* ethernet_frame );
 
     sender_reciever flip_sender_reciever( const sender_reciever& src_dest );
@@ -82,6 +92,8 @@ namespace ntk {
     }
 
     bool is_ipv4( const unsigned char* ethernet_frame );
+
+    std::string ip_to_string( uint32_t ip );
     
 } // namespace ntk
 

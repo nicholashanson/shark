@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <unordered_set>
 #include <cstdint>
 #include <iomanip>
 
@@ -90,6 +91,17 @@ namespace ntk {
 
     std::vector<std::vector<uint8_t>> get_packets_by_line_numbers( const std::string& filename,
                                                                    const std::vector<int>& line_numbers );
+
+    template<typename Key,typename Value>
+    bool is_one_to_one_mapping( const std::map<Key, Value>& m ) {
+        std::unordered_set<Value> seen_values;
+        for ( const auto& [ key, value ] : m ) {
+            if ( !seen_values.insert( value ).second ) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 }
 

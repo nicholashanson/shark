@@ -4,6 +4,7 @@
 #include <array>
 #include <map>
 #include <vector>
+#include <ranges>
 #include <span>
 #include <string>
 #include <expected>
@@ -24,6 +25,8 @@
 #include <tcp.hpp>
 
 namespace ntk {
+
+    using sni_to_ip = std::map<std::string,uint32_t>;
 
     const std::array<std::string,5> tls_secret_labels = {
         "SERVER_HANDSHAKE_TRAFFIC_SECRET",  
@@ -101,7 +104,17 @@ namespace ntk {
         const uint16_t tls_version,
         const uint16_t cipher_suite,
         const std::vector<tls_record>& encrypted_records,
-        const secrets& session_keys );
+        const secrets& session_keys,
+        const std::string& secret_label = "SERVER_HANDSHAKE_TRAFFIC_SECRET" );
+
+    tls_record decrypt_record( const std::array<uint8_t,32>& client_random,
+                               const std::array<uint8_t,32>& server_random,
+                               const uint16_t tls_version,
+                               const uint16_t cipher_suite,
+                               const tls_record& record,
+                               const secrets& session_keys,
+                               const std::string& secret_label,
+                               uint64_t seq_num );
 
     std::vector<uint8_t> build_tls13_nonce( const std::vector<uint8_t>& base_iv, uint64_t seq_num );
 
@@ -121,6 +134,10 @@ namespace ntk {
 
     bool is_client_hello_v( const std::vector<uint8_t>& packet );
 
+    bool is_tls_alert( const unsigned char* packet );
+    
+    bool is_tls_alert_v( const std::vector<uint8_t>& packet );
+
     bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs );
 
     bool is_complete_secrets( const std::map<std::string,std::vector<uint8_t>>& secrets );
@@ -129,13 +146,21 @@ namespace ntk {
 
     std::expected<std::string,std::string> get_sni( const client_hello& hello );
 
+    std::vector<std::string> get_snis( const session& packets, const std::string& host );
+
     std::expected<bool,std::string> has_sni( const client_hello& hello, const std::string& host );
 
     std::expected<bool,std::string> sni_contains( const client_hello& hello, const std::string& host );
 
+    sni_to_ip get_sni_to_ip( const session& packets );
+
     client_hello get_client_hello_from_ethernet_frame( const unsigned char* ethernet_frame );
 
     client_hello get_client_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame );
+
+    server_hello get_server_hello_from_ethernet_frame( const unsigned char* ethernet_frame );
+
+    server_hello get_server_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame );
 
 } // namespace ntk
 

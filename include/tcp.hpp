@@ -34,6 +34,7 @@ namespace ntk {
         uint32_t sequence_number;
         uint32_t acknowledgment_number;
         uint16_t data_offset;
+        uint8_t flags;
         uint16_t window_size;
         uint16_t checksum;
         uint16_t urgent_pointer;
@@ -50,6 +51,20 @@ namespace ntk {
                 checksum == other.checksum &&
                 urgent_pointer == other.urgent_pointer &&
                 options == other.options;
+        }
+    };
+
+    struct four_tuple { 
+        uint32_t client_ip;
+        uint32_t server_ip;
+        uint16_t client_port;
+        uint16_t server_port;
+
+        bool operator==( const four_tuple& other ) const {
+            return client_ip == other.client_ip &&
+                server_ip == other.server_ip &&
+                client_port == other.client_port &&
+                server_port == other.server_port;
         }
     };
 
@@ -76,6 +91,14 @@ namespace ntk {
     bool is_tcp( const unsigned char* packet );
 
     bool is_tcp_v( const std::vector<uint8_t>& packet );
+
+    class tcp_transfer;
+
+    four_tuple get_four_from_ethernet( const unsigned char* packet );
+
+    four_tuple get_four_from_ethernet( const std::vector<uint8_t>& packet );
+
+    four_tuple flip_four( const four_tuple& four );
 
 } // namespace ntk
 

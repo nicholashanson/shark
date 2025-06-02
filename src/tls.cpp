@@ -42,6 +42,13 @@ namespace ntk {
         return parse_client_hello( client_hello_bytes );
     }
 
+    client_hello get_client_hello( const std::vector<uint8_t>& tcp_payload ) {
+        
+        auto tls_record_span = std::span<const uint8_t>( tcp_payload );
+        auto client_hello_bytes = tls_record_span.subspan( 9 );
+        return parse_client_hello( client_hello_bytes );
+    }
+
     server_hello parse_server_hello( const std::span<const uint8_t> server_hello_bytes ) {
 
         const size_t version_len = 2;
@@ -70,6 +77,12 @@ namespace ntk {
         std::memcpy( s_hello.extensions.data(), &server_hello_bytes[ extensions_len_pos + 2 ], extensions_len );
 
         return s_hello;
+    }
+
+    server_hello get_server_hello( const std::span<const uint8_t> tcp_payload ) {
+        
+        auto server_hello_bytes = tcp_payload.subspan( 9 );
+        return parse_server_hello( server_hello_bytes );
     }
 
     std::expected<
@@ -321,9 +334,10 @@ namespace ntk {
                                               const uint16_t tls_version,
                                               const uint16_t cipher_suite,
                                               const std::vector<tls_record>& encrypted_records,
-                                              const secrets& session_keys ) {
+                                              const secrets& session_keys,
+                                              const std::string& secret_label ) {
 
-        auto secret = get_traffic_secret( session_keys, client_random, "SERVER_HANDSHAKE_TRAFFIC_SECRET" );
+        auto secret = get_traffic_secret( session_keys, client_random, secret_label );
 
         auto key_material = derive_tls_key_iv( secret, EVP_sha384(), 32, 12 );
 
@@ -344,6 +358,29 @@ namespace ntk {
             result.push_back( { record.content_type, record.version, decrypted_payload } );
             seq_num++;
         }
+
+        return result;
+    }
+
+    tls_record decrypt_record( const std::array<uint8_t,32>& client_random,
+                               const std::array<uint8_t,32>& server_random,
+                               const uint16_t tls_version,
+                               const uint16_t cipher_suite,
+                               const tls_record& record,
+                               const secrets& session_keys,
+                               const std::string& secret_label,
+                               uint64_t seq_num ) {
+
+        auto secret = get_traffic_secret( session_keys, client_random, secret_label );
+        auto key_material = derive_tls_key_iv( secret, EVP_sha384(), 32, 12 );
+        auto nonce = build_tls13_nonce( key_material.iv, seq_num );
+        auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
+        auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload );
+
+        tls_record result { 
+            record.content_type, 
+            record.version, 
+            decrypted_payload };
 
         return result;
     }
@@ -405,6 +442,31 @@ namespace ntk {
 
     bool is_client_hello_v( const std::vector<uint8_t>& packet ) {
         return is_client_hello( packet.data() );
+    }
+
+    bool is_tls_alert( const unsigned char* packet ) {
+        if ( !is_tls( packet ) ) return false;
+
+        auto tls_record = extract_payload_from_ethernet( packet );
+
+        if ( tls_record.size() < 7 ) return false; 
+
+        uint8_t content_type = tls_record[ 0 ];
+        if ( content_type != 20 ) return false; 
+
+        uint16_t length = ( tls_record[ 3 ] << 8 ) | tls_record[ 4 ];
+        if ( length < 2 ) return false; 
+
+        uint8_t alert_level = tls_record[ 5 ];       
+        uint8_t alert_description = tls_record[ 6 ];
+
+        if ( alert_level != 1 && alert_level != 2 ) return false;
+
+        return true;
+    }
+
+    bool is_tls_alert_v( const std::vector<uint8_t>& packet ) {
+        return is_tls_alert( packet.data() );
     }
 
     bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs ) {
@@ -477,6 +539,18 @@ namespace ntk {
         return std::unexpected( "No sever name found" );
     }
 
+    std::expected<std::string,std::string> get_sni( const std::vector<uint8_t>& hello ) {
+
+        auto client_hello = get_client_hello_from_ethernet_frame( hello );
+        auto sni = get_sni( client_hello );
+        
+        if ( !sni.has_value() ) {
+            return std::unexpected( sni.error() );
+        } else {
+            return sni.value();
+        }
+    }
+
     std::expected<bool,std::string> has_sni( const client_hello& hello, const std::string& host ) {
 
         auto result = get_sni( hello );
@@ -499,13 +573,64 @@ namespace ntk {
         return result.value().contains( host );
     }
 
+    std::vector<std::string> get_snis( const session& packets, const std::string& host ) {
+
+        std::vector<std::string> snis;
+
+        for ( auto& client_hello_packet : packets | std::views::filter( is_client_hello_v ) ) {
+            auto client_hello = get_client_hello_from_ethernet_frame( client_hello_packet );
+            auto result = get_sni( client_hello );
+
+            if ( result.has_value() ) std::cout << result.value() << std::endl;
+
+            if ( !result.has_value() ) {
+                std::cerr << result.error() << std::endl;
+            }
+
+            if ( result && result->contains( host ) ) {
+                snis.push_back( *result );
+            }
+        }
+        
+        return snis;
+    }
+
+    sni_to_ip get_sni_to_ip( const session& packets ) {
+
+        sni_to_ip results;
+
+        for ( auto& client_hello_packet : packets | std::views::filter( is_client_hello_v ) ) {
+            auto sni = get_sni( client_hello_packet );
+
+            if ( !sni.has_value() ) {
+                std::cerr << sni.error() << std::endl;
+            }
+
+            ipv4_header header = get_ipv4_header( client_hello_packet.data() );
+            if ( !results.contains( sni.value() ) ) {
+                results[ sni.value() ] = header.destination_ip_addr;
+            }
+        }
+
+        return results;
+    }
+
     client_hello get_client_hello_from_ethernet_frame( const unsigned char* ethernet_frame ) {
-        auto tcp_payload = std::span<const uint8_t>( extract_payload_from_ethernet( ethernet_frame ) );
+        auto tcp_payload = extract_payload_from_ethernet( ethernet_frame );
         return get_client_hello( tcp_payload );
     }
 
     client_hello get_client_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame ) {
         return get_client_hello_from_ethernet_frame( ethernet_frame.data() );
+    }
+
+    server_hello get_server_hello_from_ethernet_frame( const unsigned char* ethernet_frame ) {
+        auto tcp_payload = std::span<const uint8_t>( extract_payload_from_ethernet( ethernet_frame ) );
+        return get_server_hello( tcp_payload );
+    }
+
+    server_hello get_server_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame ) {
+        return get_server_hello_from_ethernet_frame( ethernet_frame.data() );
     }
 
 } // namespace ntk
