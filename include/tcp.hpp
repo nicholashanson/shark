@@ -6,6 +6,8 @@
 
 #include <vector>
 #include <map>
+#include <unordered_set>
+#include <variant>
 
 #include <ipv4.hpp>
 #include <constants.hpp>
@@ -68,6 +70,19 @@ namespace ntk {
         }
     };
 
+    struct tcp_handshake {
+        std::vector<uint8_t> syn;
+        std::vector<uint8_t> syn_ack;
+        std::vector<uint8_t> ack;
+    };
+
+    using fin_ack_fin_ack = std::array<std::vector<uint8_t>,4>;
+    using rst = std::vector<uint8_t>;
+
+    struct tcp_termination {
+        std::variant<fin_ack_fin_ack,rst> closing_sequence;  
+    };
+
     std::vector<uint8_t> extract_tcp_header( const unsigned char* ethernet_frame, const size_t ipv4_header_len );
 
     tcp_header parse_tcp_header( const std::vector<uint8_t>& raw_tcp_header );
@@ -92,6 +107,10 @@ namespace ntk {
 
     bool is_tcp_v( const std::vector<uint8_t>& packet );
 
+    tcp_handshake get_handshake( const four_tuple& four, const session& packets );
+
+    std::vector<tcp_handshake> get_handshakes( const four_tuple& four, const session& packets );
+
     class tcp_transfer;
 
     four_tuple get_four_from_ethernet( const unsigned char* packet );
@@ -99,6 +118,29 @@ namespace ntk {
     four_tuple get_four_from_ethernet( const std::vector<uint8_t>& packet );
 
     four_tuple flip_four( const four_tuple& four );
+
+} // namespace ntk
+
+namespace std {
+
+    template <>
+    struct hash<ntk::four_tuple> {
+        size_t operator()( const ntk::four_tuple& ft ) const noexcept {
+            size_t h1 = hash<uint32_t>{}( ft.client_ip );
+            size_t h2 = hash<uint32_t>{}( ft.server_ip );
+            size_t h3 = hash<uint16_t>{}( ft.client_port );
+            size_t h4 = hash<uint16_t>{}( ft.server_port );
+            return h1 ^ ( h2 << 1 ) ^ ( h3 << 2 ) ^ ( h4 << 3 ); 
+        }
+    };
+
+} // namespace std
+
+namespace ntk {
+
+    std::unordered_set<four_tuple> get_four_tuples( const session& packets );
+
+    tcp_termination get_termination( const four_tuple& four, const session& packets );
 
 } // namespace ntk
 

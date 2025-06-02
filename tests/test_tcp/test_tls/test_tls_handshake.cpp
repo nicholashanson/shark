@@ -297,3 +297,53 @@ TEST( PacketParsingTests, FourTuple ) {
 
     ASSERT_EQ( four, expected_four );
 }
+
+TEST( PacketParsingTests, FourTupleSet ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+
+    ASSERT_EQ( four_tuples.size(), 1 ); 
+}
+
+TEST( PacketParsingTests, TCPHandshakeDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_handshake = ntk::get_handshake( four_tuple, packet_data );
+
+    ASSERT_EQ( tcp_handshake.syn, packet_data[ 0 ] );
+    ASSERT_EQ( tcp_handshake.syn_ack, packet_data[ 1 ] );
+    ASSERT_EQ( tcp_handshake.ack, packet_data[ 2 ] );
+}
+
+TEST( PacketParsingTests, TCPHandshakesDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_handshakes = ntk::get_handshakes( four_tuple, packet_data );
+
+    ASSERT_EQ( tcp_handshakes.size(), 1 );
+}
+
+TEST( LiveStreamTests, TCPHandshakesDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/earth_cam_video.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_handshakes = ntk::get_handshakes( four_tuple, packet_data );
+
+    ASSERT_EQ( tcp_handshakes.size(), 1 );
+}
+
+TEST( PacketParsingTests, TCPTerminationDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_termination = ntk::get_termination( four_tuple, packet_data );
+
+    ASSERT_EQ( std::get<ntk::rst>( tcp_termination.closing_sequence ), packet_data[ 17 ] );
+}

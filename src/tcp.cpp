@@ -7,11 +7,8 @@ namespace ntk {
         std::vector<uint8_t> tcp_header;
 
         size_t tcp_header_offset = 14 + ipv4_header_len;
-
         uint8_t data_offset_byte = ethernet_frame[ tcp_header_offset + 12 ];
-
         size_t data_offset = ( data_offset_byte >> 4 ) * 4;
-        
         tcp_header.resize( data_offset );
 
         std::memcpy( tcp_header.data(), ethernet_frame + 14 + ipv4_header_len, data_offset );
@@ -225,17 +222,6 @@ namespace ntk {
         return is_tcp( packet.data() );
     }
 
-    struct tcp_handshake {
-        std::vector<uint8_t> syn;
-        std::vector<uint8_t> syn_ack;
-        std::vector<uint8_t> ack;
-    };
-
-    struct tcp_termination {
-        std::vector<uint8_t> fin;
-        std::vector<uint8_t> rst;
-    };
-
     bool is_same_connection( const ipv4_header& packet_ip_header, const tcp_header& packet_tcp_header, const four_tuple& four )  { 
         return ( packet_ip_header.source_ip_addr == four.client_ip ) || ( packet_ip_header.destination_ip_addr == four.client_ip ) &&
                ( packet_ip_header.source_ip_addr == four.server_ip ) || ( packet_ip_header.destination_ip_addr == four.server_ip ) &&
@@ -314,6 +300,78 @@ namespace ntk {
         return {}; 
     }
 
+    std::vector<tcp_handshake> get_handshakes( const four_tuple& four, const session& packets ) {
+        
+        std::vector<tcp_handshake> handshakes;
+
+        std::vector<std::vector<uint8_t>> connection_packets;
+        for ( const auto& packet : packets ) {
+            if ( is_same_connection( packet, four ) ) {
+                connection_packets.push_back( packet );
+            }
+        }
+
+        for ( size_t i = 0; i + 2 < connection_packets.size(); ++i ) {
+            const auto& syn_pkt = connection_packets[ i ];
+            const auto& syn_ack_pkt = connection_packets[ i + 1 ];
+            const auto& ack_pkt = connection_packets[ i + 2 ];
+
+            if ( is_syn_of( syn_pkt, four ) &&
+                 is_syn_ack_of( syn_ack_pkt, four ) &&
+                 is_ack_of( ack_pkt, four ) ) {
+                tcp_handshake handshake;
+                handshake.syn = syn_pkt;
+                handshake.syn_ack = syn_ack_pkt;
+                handshake.ack = ack_pkt;
+                handshakes.push_back( handshake );
+            }
+        }
+
+        return handshakes; 
+    }
+
+    tcp_termination get_termination( const four_tuple& four, const session& packets ) {
+
+        std::vector<std::vector<uint8_t>> connection_packets;
+
+
+        for ( const auto& packet : packets ) {
+            if ( is_same_connection( packet, four ) ) {
+                connection_packets.push_back( packet );
+            }
+        }
+
+        for ( size_t i = 0; i + 3 < connection_packets.size(); ++i ) {
+            const auto& fin1 = connection_packets[ i ];
+            const auto& ack1 = connection_packets[ i + 1 ];
+            const auto& fin2 = connection_packets[ i + 2 ];
+            const auto& ack2 = connection_packets[ i + 3 ];
+
+            auto tcp1 = get_tcp_header( fin1.data() );
+            auto tcp2 = get_tcp_header( ack1.data() );
+            auto tcp3 = get_tcp_header( fin2.data() );
+            auto tcp4 = get_tcp_header( ack2.data() );
+
+            if ( ( tcp1.flags & 0x01 ) && is_ack( tcp2 ) &&
+                 ( tcp3.flags & 0x01 ) && is_ack( tcp4 ) ) {
+                return tcp_termination {
+                    .closing_sequence = fin_ack_fin_ack{ fin1, ack1, fin2, ack2 }
+                };
+            }
+        }
+
+        for ( const auto& packet : connection_packets ) {
+            auto tcp = get_tcp_header( packet.data() );
+            if ( tcp.flags & 0x04 ) { 
+                return tcp_termination {
+                    .closing_sequence = packet
+                };
+            }
+        }
+
+        return {};
+    }
+
     class tcp_transfer {
 
         public:
@@ -366,5 +424,20 @@ namespace ntk {
         };
     }
 
+    std::unordered_set<four_tuple> get_four_tuples( const session& packets ) {
+
+        std::unordered_set<four_tuple> four_tuples;
+
+        for ( auto& packet : packets ) {
+            auto four = get_four_from_ethernet( packet );
+            auto flipped = flip_four( four );
+            if ( four_tuples.contains( four ) || four_tuples.contains( flipped ) ) {
+                continue;
+            }
+            four_tuples.insert( four );
+        }
+        
+        return four_tuples;
+    }
 
 } // namespace ntk
