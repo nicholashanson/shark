@@ -347,3 +347,19 @@ TEST( PacketParsingTests, TCPTerminationDetection ) {
 
     ASSERT_EQ( std::get<ntk::rst>( tcp_termination.closing_sequence ), packet_data[ 17 ] );
 }
+
+TEST( PacketParsingTests, TCPHandshakeSequenceNumbers ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_handshake = ntk::get_handshake( four_tuple, packet_data );
+
+    auto syn_header = ntk::get_tcp_header( tcp_handshake.syn.data() );
+    auto syn_ack_header = ntk::get_tcp_header( tcp_handshake.syn_ack.data() );
+    auto ack_header = ntk::get_tcp_header( tcp_handshake.ack.data() );
+
+    ASSERT_EQ( syn_ack_header.acknowledgment_number, syn_header.sequence_number + 1 );
+    ASSERT_EQ( ack_header.acknowledgment_number, syn_ack_header.sequence_number + 1 );
+    ASSERT_EQ( ack_header.sequence_number, syn_header.sequence_number + 1 );
+}

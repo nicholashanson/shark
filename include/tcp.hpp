@@ -87,6 +87,8 @@ namespace ntk {
 
     tcp_header parse_tcp_header( const std::vector<uint8_t>& raw_tcp_header );
 
+    tcp_header get_tcp_header( const unsigned char* ethernet_frame );
+
     bool is_non_overlapping_stream( const tcp_stream& stream );
 
     std::vector<raw_tcp_frame> extract_raw_tcp_stream( const session& tcp_session );
