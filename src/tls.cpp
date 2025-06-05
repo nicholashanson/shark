@@ -633,4 +633,7 @@ namespace ntk {
         return get_server_hello_from_ethernet_frame( ethernet_frame.data() );
     }
 
+    tls_over_tcp::tls_over_tcp( const four_tuple& four )
+        : tcp_transfer( four ) {}
+
 } // namespace ntk

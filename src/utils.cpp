@@ -107,4 +107,61 @@ namespace ntk {
         return packets;
     }
 
+    void print_tcp_option(const tcp_option& opt) {
+        
+        std::cout << "    Option[" << static_cast<int>(opt.type)
+                  << "]: Type: " << static_cast<int>(opt.type) << ", Data: [";
+        
+        for (size_t i = 0; i < opt.option.size(); ++i) {
+            std::cout << std::hex << std::setw( 2 ) << std::setfill( '0' )
+                     << static_cast<int>( opt.option[ i ] );
+            if ( i != opt.option.size() - 1 )
+                std::cout << " ";
+        }
+
+        std::cout << std::dec << std::setfill(' ') << "]\n";
+    }
+
+    void print_tcp_header(const tcp_header& header) {
+
+        const int label_width = 26;
+
+        std::cout << std::dec << std::setfill( ' ' );
+
+        std::cout << "===== TCP HEADER BEGIN =====\n";
+
+        auto print_field = [&]( const std::string& label, auto value ) {
+            std::cout << std::left << std::setw( label_width ) << label << value << "\n";
+        };
+
+        print_field( "Source Port:", header.source_port );
+        print_field( "Destination Port:", header.destination_port );
+        print_field( "Sequence Number:", header.sequence_number );
+        print_field( "Acknowledgment Number:", header.acknowledgment_number );
+        print_field( "Data Offset:", static_cast<uint32_t>( header.data_offset ) ); 
+
+        std::cout << std::left << std::setw( label_width ) << "Flags:"
+                  << "0x" << std::hex << static_cast<int>( header.flags ) << std::dec << "\n";
+
+        print_field( "Window Size:", header.window_size );
+
+        std::cout << std::left << std::setw( label_width ) << "Checksum:"
+                 << "0x" << std::hex << std::setw( 4 ) << std::setfill( '0' )
+                 << header.checksum << std::dec << std::setfill( ' ' ) << "\n";
+
+        print_field( "Urgent Pointer:", header.urgent_pointer );
+
+        std::cout << std::left << std::setw( label_width ) << "Options:";
+        if ( header.options.empty() ) {
+            std::cout << "None\n";
+        } else {
+            std::cout << "\n";
+            for ( const auto& opt : header.options ) {
+                print_tcp_option( opt );
+            }
+        }
+
+        std::cout << "===== TCP HEADER END =====\n\n";
+    }
+
 }

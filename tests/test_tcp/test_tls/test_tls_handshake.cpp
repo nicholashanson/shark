@@ -363,3 +363,100 @@ TEST( PacketParsingTests, TCPHandshakeSequenceNumbers ) {
     ASSERT_EQ( ack_header.acknowledgment_number, syn_ack_header.sequence_number + 1 );
     ASSERT_EQ( ack_header.sequence_number, syn_header.sequence_number + 1 );
 }
+
+TEST( PacketParsingTests, TCPEndOfHandshake ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto handshake = ntk::get_handshake( four_tuple, packet_data );
+
+    auto end_of_handshake_ptr = ntk::get_end_of_handshake( packet_data, four_tuple, handshake );
+
+    auto& end_of_handshake = packet_data[ 2 ];
+
+    ASSERT_NE( end_of_handshake_ptr, nullptr );
+    ASSERT_EQ( *end_of_handshake_ptr, end_of_handshake );
+}
+
+TEST( PacketParsingTests, TCPStartOfTermination ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto termination = ntk::get_termination( four_tuple, packet_data );
+
+    auto termination_header = ntk::get_tcp_header( std::get<ntk::rst>( termination.closing_sequence ).data() );
+
+    auto& termination_start = packet_data[ 17 ];
+
+    auto start_of_termination_ptr = ntk::get_start_of_termination( packet_data, four_tuple, termination );
+
+    ASSERT_NE( start_of_termination_ptr, nullptr );
+    ASSERT_EQ( *start_of_termination_ptr, termination_start );
+    ASSERT_EQ( static_cast<int>( termination_header.sequence_number ), 1441872756 );
+}
+
+TEST( PacketParsingTests, TCPSpanSize ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+
+    auto termination = ntk::get_termination( four_tuple, packet_data );
+    auto start_of_termination_ptr = ntk::get_start_of_termination( packet_data, four_tuple, termination );
+
+    auto handshake = ntk::get_handshake( four_tuple, packet_data );
+    auto end_of_handshake_ptr = ntk::get_end_of_handshake( packet_data, four_tuple, handshake );
+
+    auto size = static_cast<size_t>( start_of_termination_ptr - end_of_handshake_ptr );
+
+    ASSERT_EQ( size, 15 );
+}
+
+TEST( PacketParsingTests, TCPTrafficParsing ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+
+    for ( auto& packet : packet_data ) {
+        auto packet_tcp_header = ntk::get_tcp_header( packet.data() );
+        ntk::print_tcp_header( packet_tcp_header );
+    }
+
+    size_t data_packet_count = std::count_if( packet_data.begin(), packet_data.end(), ntk::is_data_packet );
+
+    ntk::tls_over_tcp tls_transfer( four_tuple );
+    tls_transfer.load( packet_data );
+
+    auto& client_traffic = ntk::tcp_transfer_friend_helper::client_traffic( tls_transfer );
+    auto& server_traffic = ntk::tcp_transfer_friend_helper::server_traffic( tls_transfer );
+
+    const size_t number_of_resets = 2;
+
+    EXPECT_EQ( client_traffic.size(), 3 );
+    EXPECT_EQ( server_traffic.size(), data_packet_count - 3 - number_of_resets );
+}
+
+TEST( PacketParsingTests, TCPDataPackets ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 0 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 1 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 2 ] ) );
+    ASSERT_TRUE( ntk::is_data_packet( packet_data[ 3 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 4 ] ) );
+    ASSERT_TRUE( ntk::is_data_packet( packet_data[ 5 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 6 ] ) );
+    ASSERT_TRUE( ntk::is_data_packet( packet_data[ 7 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 8 ] ) );
+    ASSERT_TRUE( ntk::is_data_packet( packet_data[ 9 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 10 ] ) );
+    ASSERT_TRUE( ntk::is_data_packet( packet_data[ 11 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 12 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 13 ] ) );
+    ASSERT_FALSE( ntk::is_data_packet( packet_data[ 14 ] ) );
+    ASSERT_TRUE( ntk::is_data_packet( packet_data[ 15 ] ) );
+}

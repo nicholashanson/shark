@@ -162,6 +162,14 @@ namespace ntk {
 
     server_hello get_server_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame );
 
+    class tls_over_tcp : public tcp_transfer {
+        public:
+            tls_over_tcp( const four_tuple& four );
+        private:
+            client_hello c_hello;
+            server_hello s_hello;
+    };
+
 } // namespace ntk
 
 #endif

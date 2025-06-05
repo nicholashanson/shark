@@ -103,6 +103,8 @@ namespace ntk {
         return true;
     }
 
+    void print_tcp_header( const tcp_header& header );
+
 }
 
 #endif

@@ -8,6 +8,8 @@
 #include <map>
 #include <unordered_set>
 #include <variant>
+#include <span>
+#include <iostream>
 
 #include <ipv4.hpp>
 #include <constants.hpp>
@@ -113,7 +115,24 @@ namespace ntk {
 
     std::vector<tcp_handshake> get_handshakes( const four_tuple& four, const session& packets );
 
-    class tcp_transfer;
+    class tcp_transfer {
+        public:
+            tcp_transfer( const four_tuple& four );
+            void load( const session& packet_data );
+        private:
+            void split_stream( const session& packet_data );
+        private:
+            tcp_handshake m_handshake;
+            tcp_termination m_termination;
+            std::vector<std::vector<uint8_t>> m_client_acks;
+            std::vector<std::vector<uint8_t>> m_server_acks;
+            std::vector<std::vector<uint8_t>> m_client_traffic;
+            std::vector<std::vector<uint8_t>> m_server_traffic;
+            
+            four_tuple m_four;
+
+            friend class tcp_transfer_friend_helper;
+    };
 
     four_tuple get_four_from_ethernet( const unsigned char* packet );
 
@@ -143,6 +162,29 @@ namespace ntk {
     std::unordered_set<four_tuple> get_four_tuples( const session& packets );
 
     tcp_termination get_termination( const four_tuple& four, const session& packets );
+
+    class tcp_transfer_friend_helper {
+        public:
+            static const tcp_handshake& handshake( const tcp_transfer& t );
+            static const tcp_termination& termination( const tcp_transfer& t );
+            static const std::vector<std::vector<uint8_t>>& client_acks( const tcp_transfer& t );
+            static const std::vector<std::vector<uint8_t>>& server_acks( const tcp_transfer& t );
+            static const std::vector<std::vector<uint8_t>>& client_traffic( const tcp_transfer& t );
+            static const std::vector<std::vector<uint8_t>>& server_traffic( const tcp_transfer& t );
+            static const four_tuple& four( const tcp_transfer& t );
+    };
+
+    const std::vector<uint8_t>* get_end_of_handshake( const session& packets, 
+                                                      const four_tuple& four,
+                                                      const tcp_handshake& handshake );
+
+    const std::vector<uint8_t>* get_start_of_termination( const session& packets, 
+                                                          const four_tuple& four,
+                                                          const tcp_termination& termination );
+
+    bool is_data_packet( const std::vector<uint8_t>& packet );
+
+    bool is_ack_only_packet( const std::vector<uint8_t>& packet );
 
 } // namespace ntk
 
