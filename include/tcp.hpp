@@ -10,11 +10,21 @@
 #include <variant>
 #include <span>
 #include <iostream>
+#include <limits>
 
 #include <ipv4.hpp>
 #include <constants.hpp>
 
 namespace ntk {
+
+    enum class tcp_flags : uint8_t {
+        FIN = 0x01,
+        SYN = 0x02,
+        RST = 0x04,
+        ACK = 0x10,
+        FIN_ACK = 0x11,
+        SYN_ACK = 0x12
+    };
 
     struct raw_tcp_frame {
         std::vector<uint8_t> header;
@@ -163,6 +173,8 @@ namespace ntk {
 
     tcp_termination get_termination( const four_tuple& four, const session& packets );
 
+    std::vector<tcp_termination> get_terminations( const four_tuple& four, const session& packets );
+
     class tcp_transfer_friend_helper {
         public:
             static const tcp_handshake& handshake( const tcp_transfer& t );
@@ -185,6 +197,8 @@ namespace ntk {
     bool is_data_packet( const std::vector<uint8_t>& packet );
 
     bool is_ack_only_packet( const std::vector<uint8_t>& packet );
+
+    bool is_reset( const std::vector<uint8_t>& packet );
 
 } // namespace ntk
 

@@ -176,8 +176,6 @@ TEST( PacketParsingTests, TLSAlertParsing ) {
 
     ASSERT_EQ( decrypted_records.size(), 1 );
     ASSERT_EQ( decrypted_records[ 0 ].payload.size(), encrypted_records[ 0 ].payload.size() - 16 );
-
-    ntk::print_vector( decrypted_records[ 0 ].payload );
 }
 
 TEST( PacketParsingTests, TLSApplicationDataParsing ) {
@@ -220,8 +218,6 @@ TEST( PacketParsingTests, TLSApplicationDataParsing ) {
         session_keys,
         "SERVER_TRAFFIC_SECRET_0",
         1 );
-
-    ntk::print_vector( second_decrypted_record.payload );
 }
 
 TEST( PacketParsingTests, TLSHandshakeParsing ) {
@@ -254,8 +250,6 @@ TEST( PacketParsingTests, TLSHandshakeParsing ) {
         session_keys,
         "CLIENT_TRAFFIC_SECRET_0",
         0 );
-
-    ntk::print_vector( decrypted_record.payload );
 }
 
 TEST( LiveStreamTests, TLSGetSNIs ) {
@@ -328,7 +322,27 @@ TEST( PacketParsingTests, TCPHandshakesDetection ) {
     ASSERT_EQ( tcp_handshakes.size(), 1 );
 }
 
+TEST( PacketParsingTests, TCPCheckerBoardHandshakesDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/checkerboard.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_handshakes = ntk::get_handshakes( four_tuple, packet_data );
+
+    ASSERT_EQ( tcp_handshakes.size(), 1 );
+}
+
 TEST( LiveStreamTests, TCPHandshakesDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/earth_cam_video.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_handshakes = ntk::get_handshakes( four_tuple, packet_data );
+
+    ASSERT_EQ( tcp_handshakes.size(), 1 );
+}
+
+TEST( LiveStreamTests, TCPEarthCamHandshakesDetection ) {
 
     auto packet_data = ntk::read_packets_from_file( "../packet_data/earth_cam_video.txt" );
     auto four_tuples = ntk::get_four_tuples( packet_data );
@@ -379,6 +393,116 @@ TEST( PacketParsingTests, TCPEndOfHandshake ) {
     ASSERT_EQ( *end_of_handshake_ptr, end_of_handshake );
 }
 
+TEST( PacketParsingTests, TCPLenaFinAcks ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tiny_cross.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+
+    auto is_fin_ack = [&]( const auto& packet ) {
+        auto packet_tcp_header = ntk::get_tcp_header( packet.data() );
+        return ( packet_tcp_header.flags & static_cast<uint8_t>( ntk::tcp_flags::FIN_ACK ) ) == static_cast<uint8_t>( ntk::tcp_flags::FIN_ACK );
+    };
+
+    auto num_fin_acks = std::count_if( packet_data.begin(), packet_data.end(), is_fin_ack );
+
+    ASSERT_EQ( num_fin_acks, 2 );
+}
+
+TEST( LiveStreamTests, TCPEathCamVideoFinAcks ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/earth_cam_video.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+
+    auto is_fin_ack = [&]( const auto& packet ) {
+        auto packet_tcp_header = ntk::get_tcp_header( packet.data() );
+        return ( packet_tcp_header.flags & static_cast<uint8_t>( ntk::tcp_flags::FIN_ACK ) ) == static_cast<uint8_t>( ntk::tcp_flags::FIN_ACK );
+    };
+
+    auto num_fin_acks = std::count_if( packet_data.begin(), packet_data.end(), is_fin_ack );
+
+    ASSERT_EQ( num_fin_acks, 2 );
+}
+
+TEST( PacketParsingTests, TCPTinyCrossTerminationDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tiny_cross.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_termination = ntk::get_termination( four_tuple, packet_data );
+
+    ASSERT_TRUE( std::holds_alternative<ntk::fin_ack_fin_ack>( tcp_termination.closing_sequence ) );
+
+    auto& seq = std::get<ntk::fin_ack_fin_ack>( tcp_termination.closing_sequence );
+
+    ASSERT_EQ( seq[ 0 ], packet_data[ 9 ] );
+    ASSERT_EQ( seq[ 1 ], packet_data[ 12 ] );
+    ASSERT_EQ( seq[ 2 ], packet_data[ 10 ] );
+    ASSERT_EQ( seq[ 3 ], packet_data[ 11 ] ); 
+}
+
+TEST( PacketParsingTests, TCPLenaTerminationDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/lena.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_termination = ntk::get_termination( four_tuple, packet_data );
+
+    ASSERT_TRUE( std::holds_alternative<ntk::fin_ack_fin_ack>( tcp_termination.closing_sequence ) );
+
+    auto& seq = std::get<ntk::fin_ack_fin_ack>( tcp_termination.closing_sequence );
+
+    ASSERT_EQ( seq[ 0 ], packet_data[ 458 ] );
+    ASSERT_EQ( seq[ 1 ], packet_data[ 459 ] );
+    ASSERT_EQ( seq[ 2 ], packet_data[ 459 ] );
+    ASSERT_EQ( seq[ 3 ], packet_data[ 460 ] ); 
+}
+
+TEST( PacketParsingTests, TCPTinyCrossTerminationsDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tiny_cross.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_terminations = ntk::get_terminations( four_tuple, packet_data );
+
+    ASSERT_EQ( tcp_terminations.size(), 1 );
+}
+
+TEST( PacketParsingTests, TCPCheckerBoardDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/checkerboard.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_terminations = ntk::get_terminations( four_tuple, packet_data );
+
+    ASSERT_EQ( tcp_terminations.size(), 1 );
+}
+
+TEST( LiveStreamTests, TCPEarthCamVideoTerminationsDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/earth_cam_video.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_terminations = ntk::get_terminations( four_tuple, packet_data );
+
+    auto number_of_resets = std::count_if( packet_data.begin(), packet_data.end(), ntk::is_reset );
+
+    ASSERT_EQ( tcp_terminations.size(), number_of_resets );
+}
+
+TEST( PacketParsingTests, TCPTinyCrossTerminationStartDetection ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tiny_cross.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+    auto tcp_termination = ntk::get_termination( four_tuple, packet_data );
+
+    auto start_of_termination_ptr = ntk::get_start_of_termination( packet_data, four_tuple, tcp_termination );
+
+    ASSERT_NE( start_of_termination_ptr, nullptr );
+}
+
 TEST( PacketParsingTests, TCPStartOfTermination ) {
 
     auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
@@ -420,11 +544,6 @@ TEST( PacketParsingTests, TCPTrafficParsing ) {
     auto four_tuples = ntk::get_four_tuples( packet_data );
     auto four_tuple = *four_tuples.begin();
 
-    for ( auto& packet : packet_data ) {
-        auto packet_tcp_header = ntk::get_tcp_header( packet.data() );
-        ntk::print_tcp_header( packet_tcp_header );
-    }
-
     size_t data_packet_count = std::count_if( packet_data.begin(), packet_data.end(), ntk::is_data_packet );
 
     ntk::tls_over_tcp tls_transfer( four_tuple );
@@ -432,11 +551,25 @@ TEST( PacketParsingTests, TCPTrafficParsing ) {
 
     auto& client_traffic = ntk::tcp_transfer_friend_helper::client_traffic( tls_transfer );
     auto& server_traffic = ntk::tcp_transfer_friend_helper::server_traffic( tls_transfer );
+    auto& client_acks = ntk::tcp_transfer_friend_helper::client_acks( tls_transfer );
+    auto& server_acks = ntk::tcp_transfer_friend_helper::server_acks( tls_transfer );
 
     const size_t number_of_resets = 2;
 
     EXPECT_EQ( client_traffic.size(), 3 );
     EXPECT_EQ( server_traffic.size(), data_packet_count - 3 - number_of_resets );
+    EXPECT_EQ( data_packet_count, 8 );
+
+    ASSERT_EQ( client_traffic[ 0 ], packet_data[ 3 ] );
+    ASSERT_EQ( client_traffic[ 1 ], packet_data[ 9 ] );
+    ASSERT_EQ( client_traffic[ 2 ], packet_data[ 15 ] );
+
+    ASSERT_EQ( server_traffic[ 0 ], packet_data[ 5 ] );
+    ASSERT_EQ( server_traffic[ 1 ], packet_data[ 7 ] );
+    ASSERT_EQ( server_traffic[ 2 ], packet_data[ 11 ] );
+
+    ASSERT_EQ( client_acks.size(), 4 );
+    ASSERT_EQ( server_acks.size(), 4 );
 }
 
 TEST( PacketParsingTests, TCPDataPackets ) {
@@ -460,3 +593,76 @@ TEST( PacketParsingTests, TCPDataPackets ) {
     ASSERT_FALSE( ntk::is_data_packet( packet_data[ 14 ] ) );
     ASSERT_TRUE( ntk::is_data_packet( packet_data[ 15 ] ) );
 }
+
+TEST( LiveStreamTests, TCPEarthCamVideoSeqAckMatching ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/earth_cam_video.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+
+    ntk::tls_over_tcp tls_transfer( four_tuple );
+    tls_transfer.load( packet_data );
+
+    auto& client_traffic = ntk::tcp_transfer_friend_helper::client_traffic( tls_transfer );
+    auto& server_traffic = ntk::tcp_transfer_friend_helper::server_traffic( tls_transfer );
+    auto& client_acks = ntk::tcp_transfer_friend_helper::client_acks( tls_transfer );
+    auto& server_acks = ntk::tcp_transfer_friend_helper::server_acks( tls_transfer );
+
+    for ( auto& server_packet : server_traffic ) {
+    
+        size_t payload_length = ntk::extract_payload_from_ethernet( server_packet.data() ).size();
+
+        ntk::tcp_header server_tcp_header = ntk::get_tcp_header( server_packet.data() );
+
+        uint32_t expected_ack = server_tcp_header.sequence_number + static_cast<uint32_t>( payload_length );
+
+        std::cout << "expected ack: " << expected_ack << std::endl;
+
+        bool found = std::any_of( client_acks.begin(), client_acks.end(),
+            [&]( const std::vector<uint8_t>& client_packet ) {
+                ntk::tcp_header client_tcp_header = ntk::get_tcp_header( client_packet.data() );
+                return client_tcp_header.acknowledgment_number == expected_ack;
+        });
+
+        ASSERT_TRUE( found );
+    }
+}
+
+
+TEST( PacketParsingPackets, TCPTinyCrossSeqAckMatching ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/tiny_cross.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+
+    ntk::tls_over_tcp tls_transfer( four_tuple );
+    tls_transfer.load( packet_data );
+
+    std::cout << "loaded packet data" << std::endl;
+
+    auto& client_traffic = ntk::tcp_transfer_friend_helper::client_traffic( tls_transfer );
+    auto& server_traffic = ntk::tcp_transfer_friend_helper::server_traffic( tls_transfer );
+    auto& client_acks = ntk::tcp_transfer_friend_helper::client_acks( tls_transfer );
+    auto& server_acks = ntk::tcp_transfer_friend_helper::server_acks( tls_transfer );
+
+    for ( auto& server_packet : server_traffic ) {
+    
+        size_t payload_length = ntk::extract_payload_from_ethernet( server_packet.data() ).size();
+
+        ntk::tcp_header server_tcp_header = ntk::get_tcp_header( server_packet.data() );
+
+        uint32_t expected_ack = server_tcp_header.sequence_number + static_cast<uint32_t>( payload_length );
+
+        std::cout << "expected ack: " << expected_ack << std::endl;
+
+        bool found = std::any_of( client_acks.begin(), client_acks.end(),
+            [&]( const std::vector<uint8_t>& client_packet ) {
+                ntk::tcp_header client_tcp_header = ntk::get_tcp_header( client_packet.data() );
+                std::cout << "server ack: " << client_tcp_header.acknowledgment_number << std::endl;
+                return client_tcp_header.acknowledgment_number == expected_ack;
+        });
+
+        ASSERT_TRUE( found );
+    }
+}
+

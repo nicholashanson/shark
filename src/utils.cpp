@@ -109,10 +109,10 @@ namespace ntk {
 
     void print_tcp_option(const tcp_option& opt) {
         
-        std::cout << "    Option[" << static_cast<int>(opt.type)
-                  << "]: Type: " << static_cast<int>(opt.type) << ", Data: [";
+        std::cout << "    Option[" << static_cast<int>( opt.type )
+                  << "]: Type: " << static_cast<int>( opt.type ) << ", Data: [";
         
-        for (size_t i = 0; i < opt.option.size(); ++i) {
+        for ( size_t i = 0; i < opt.option.size(); ++i ) {
             std::cout << std::hex << std::setw( 2 ) << std::setfill( '0' )
                      << static_cast<int>( opt.option[ i ] );
             if ( i != opt.option.size() - 1 )
@@ -122,7 +122,7 @@ namespace ntk {
         std::cout << std::dec << std::setfill(' ') << "]\n";
     }
 
-    void print_tcp_header(const tcp_header& header) {
+    void print_tcp_header( const tcp_header& header ) {
 
         const int label_width = 26;
 
@@ -164,4 +164,4 @@ namespace ntk {
         std::cout << "===== TCP HEADER END =====\n\n";
     }
 
-}
+} // namespace ntk
