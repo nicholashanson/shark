@@ -708,4 +708,116 @@ namespace ntk {
         return !is_data_packet( packet ) && ( get_tcp_header( packet.data() ).flags & 0x10 );
     }
 
+    bool tcp_handshake_feed::feed( const std::vector<uint8_t>& packet ) {
+
+        auto packet_tcp_header = get_tcp_header( packet.data() );
+
+        if ( is_syn( packet ) ) {
+            reset();
+            m_syn = packet;
+            return true;
+        }
+
+        if ( m_syn && !m_syn_ack && is_syn_ack( packet ) &&
+             packet_tcp_header.acknowledgment_number == get_tcp_header( m_syn.value().data() ).sequence_number + 1 ) {
+            m_syn_ack = packet;
+            return true;
+        }
+
+        if ( m_syn_ack && is_ack( packet ) &&
+             packet_tcp_header.acknowledgment_number == get_tcp_header( m_syn_ack.value().data() ).sequence_number + 1 )  {
+            m_ack = packet;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool tcp_termination_feed::feed_packet( const std::vector<uint8_t>& packet ) {
+
+        auto packet_tcp_header = get_tcp_header( packet.data() );
+
+        auto is_fin_ack = [&]( const auto& packet_tcp_header ) {
+            return ( packet_tcp_header.flags & static_cast<uint8_t>( tcp_flags::FIN_ACK ) ) == static_cast<uint8_t>( tcp_flags::FIN_ACK );
+        };
+
+        if ( !m_fin_1 && is_fin_ack( packet_tcp_header ) ) {
+            m_fin_1 = packet;
+            m_fin_1_seq_number = packet_tcp_header.sequence_number;
+            std::cout << "fin_1_seq_number: " << m_fin_1_seq_number << std::endl;
+            return true;
+        }
+
+        if ( !m_fin_2 && is_fin_ack( packet_tcp_header ) ) {
+            if ( packet_tcp_header.sequence_number == m_fin_1_seq_number ) return false;
+            m_fin_2 = packet;
+            m_fin_2_seq_number = packet_tcp_header.sequence_number;
+            
+            if ( packet_tcp_header.acknowledgment_number == m_fin_1_seq_number + 1 ) {
+                m_ack_1 = packet;
+                std::cout << "ack_1 set by piggyback on fin_2 packet" << std::endl;
+            }
+            return true;
+        }
+
+        if ( m_fin_1 && !m_ack_1 ) {
+            if ( is_ack( packet_tcp_header ) &&
+                    packet_tcp_header.acknowledgment_number == m_fin_1_seq_number + 1 ) {
+                m_ack_1 = packet;
+                std::cout << "ack 1 set" << std::endl;
+                return true;
+            }
+        }
+
+        if ( m_fin_2 && !m_ack_2 && is_ack( packet_tcp_header ) ) {
+            if ( packet_tcp_header.acknowledgment_number == m_fin_2_seq_number + 1 ) {
+                m_ack_2 = packet;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool tcp_termination_feed::feed( const std::vector<uint8_t>& packet ) {
+
+        bool accepted = feed_packet( packet );
+
+        if ( !accepted ) return false;
+        
+        if ( m_fin_1 && m_ack_1 && m_fin_2 && m_ack_2 ) {
+            m_termination.closing_sequence = fin_ack_fin_ack{ *m_fin_1, *m_ack_1, *m_fin_2, *m_ack_2 };
+            m_complete = true;
+        }
+
+        return true;
+    }
+
+    tcp_live_stream::tcp_live_stream( const four_tuple& four ) 
+        : m_four( four ), m_handshake_feed( four ), m_termination_feed( four ) {}
+
+    bool tcp_live_stream::is_complete() {
+        return m_termination_feed.m_complete;
+    }
+
+    void tcp_live_stream::feed( const std::vector<uint8_t>& packet ) {
+
+        if ( is_complete() ) return;
+
+        if ( !is_same_connection( packet, m_four ) ) return;
+
+        bool handshake_packet = false;
+        bool termination_packet = false;
+        
+        if ( !m_handshake_feed.m_complete ) handshake_packet = m_handshake_feed.feed( packet );
+
+        if ( handshake_packet ) return;
+
+        if ( !m_termination_feed.m_complete ) termination_packet = m_termination_feed.feed( packet );
+
+        if ( termination_packet ) return;
+
+        m_traffic.push_back( packet );
+    }
+
 } // namespace ntk

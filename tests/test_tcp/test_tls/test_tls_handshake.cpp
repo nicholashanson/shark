@@ -666,3 +666,21 @@ TEST( PacketParsingPackets, TCPTinyCrossSeqAckMatching ) {
     }
 }
 
+TEST( PacketParsingPackets, TCPCheckerBoardLiveStream ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/checkerboard.txt" );
+    auto four_tuples = ntk::get_four_tuples( packet_data );
+    auto four_tuple = *four_tuples.begin();
+
+    ntk::tcp_live_stream live_stream( four_tuple );
+
+    for ( auto& packet : packet_data ) {
+        
+        live_stream.feed( packet );
+
+        if ( live_stream.is_complete() ) break;
+    }
+
+    ASSERT_TRUE( live_stream.is_complete() );
+}
+

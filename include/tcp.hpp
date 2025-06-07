@@ -144,6 +144,61 @@ namespace ntk {
             friend class tcp_transfer_friend_helper;
     };
 
+    struct tcp_handshake_feed { 
+
+        bool feed( const std::vector<uint8_t>& packet );
+
+        void reset() {
+            m_syn = m_syn_ack = m_ack = std::nullopt;
+        }
+
+        tcp_handshake_feed( const four_tuple& four ) 
+            : m_four( four ) {}
+
+        four_tuple m_four;
+        tcp_handshake m_handshake;
+
+        bool m_complete;
+        std::optional<std::vector<uint8_t>> m_syn;
+        std::optional<std::vector<uint8_t>> m_syn_ack;
+        std::optional<std::vector<uint8_t>> m_ack;
+    };
+
+    struct tcp_termination_feed { 
+
+        bool feed( const std::vector<uint8_t>& packet );
+        bool feed_packet( const std::vector<uint8_t>& packet );
+
+        tcp_termination_feed( const four_tuple& four ) 
+            : m_four( four ), m_fin_1_seq_number( std::numeric_limits<uint32_t>::max() ),
+              m_fin_2_seq_number( std::numeric_limits<uint32_t>::max() ) {}
+
+        four_tuple m_four;
+        bool m_complete;
+
+        tcp_termination m_termination;
+
+        std::optional<std::vector<uint8_t>> m_fin_1;
+        std::optional<std::vector<uint8_t>> m_ack_1;
+        std::optional<std::vector<uint8_t>> m_fin_2;
+        std::optional<std::vector<uint8_t>> m_ack_2;
+
+        uint32_t m_fin_1_seq_number;
+        uint32_t m_fin_2_seq_number;
+    };
+
+    class tcp_live_stream {
+        public:
+            tcp_live_stream( const four_tuple& four );
+            bool is_complete();
+            void feed( const std::vector<uint8_t>& packet );
+        private:
+            tcp_handshake_feed m_handshake_feed;
+            tcp_termination_feed m_termination_feed;
+            std::vector<std::vector<uint8_t>> m_traffic;
+            four_tuple m_four;
+    };
+
     four_tuple get_four_from_ethernet( const unsigned char* packet );
 
     four_tuple get_four_from_ethernet( const std::vector<uint8_t>& packet );
