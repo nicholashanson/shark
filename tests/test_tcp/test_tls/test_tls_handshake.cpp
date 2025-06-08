@@ -705,6 +705,10 @@ TEST( PacketParsingTests, TCPCheckerBoardLiveStream ) {
     ASSERT_EQ( closing_sequence[ 1 ], packet_data[ 28 ] );
     ASSERT_EQ( closing_sequence[ 2 ], packet_data[ 26 ] );
     ASSERT_EQ( closing_sequence[ 3 ], packet_data[ 27 ] );
+
+    auto& traffic = ntk::tcp_live_stream_friend_helper::traffic( live_stream );
+
+    ASSERT_EQ( traffic.size(), 22 );
 }
 
 
