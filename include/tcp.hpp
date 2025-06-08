@@ -147,13 +147,14 @@ namespace ntk {
     struct tcp_handshake_feed { 
 
         bool feed( const std::vector<uint8_t>& packet );
+        bool feed_packet( const std::vector<uint8_t>& packet ); 
 
         void reset() {
             m_syn = m_syn_ack = m_ack = std::nullopt;
         }
 
         tcp_handshake_feed( const four_tuple& four ) 
-            : m_four( four ) {}
+            : m_four( four ), m_complete( false ) {}
 
         four_tuple m_four;
         tcp_handshake m_handshake;
@@ -171,7 +172,7 @@ namespace ntk {
 
         tcp_termination_feed( const four_tuple& four ) 
             : m_four( four ), m_fin_1_seq_number( std::numeric_limits<uint32_t>::max() ),
-              m_fin_2_seq_number( std::numeric_limits<uint32_t>::max() ) {}
+              m_fin_2_seq_number( std::numeric_limits<uint32_t>::max() ), m_complete( false ) {}
 
         four_tuple m_four;
         bool m_complete;
@@ -197,6 +198,8 @@ namespace ntk {
             tcp_termination_feed m_termination_feed;
             std::vector<std::vector<uint8_t>> m_traffic;
             four_tuple m_four;
+
+            friend class tcp_live_stream_friend_helper;
     };
 
     four_tuple get_four_from_ethernet( const unsigned char* packet );
@@ -241,6 +244,14 @@ namespace ntk {
             static const four_tuple& four( const tcp_transfer& t );
     };
 
+    class tcp_live_stream_friend_helper {
+        public:
+            static const tcp_handshake_feed& handshake_feed( const tcp_live_stream& t );
+            static const tcp_termination_feed& termination_feed( const tcp_live_stream& t );
+            static const std::vector<std::vector<uint8_t>>& traffic( const tcp_live_stream& t );
+            static const four_tuple& four( const tcp_live_stream& t );
+    };
+
     const std::vector<uint8_t>* get_end_of_handshake( const session& packets, 
                                                       const four_tuple& four,
                                                       const tcp_handshake& handshake );
@@ -254,6 +265,8 @@ namespace ntk {
     bool is_ack_only_packet( const std::vector<uint8_t>& packet );
 
     bool is_reset( const std::vector<uint8_t>& packet );
+
+    bool is_syn( const std::vector<uint8_t>& packet );
 
 } // namespace ntk
 

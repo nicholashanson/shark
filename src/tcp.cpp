@@ -234,7 +234,8 @@ namespace ntk {
     }
 
     bool is_syn( const tcp_header& packet_tcp_header ) {
-        return ( packet_tcp_header.flags & 0x02 ) != 0;
+        return ( ( packet_tcp_header.flags & static_cast<uint8_t>( tcp_flags::SYN ) ) != 0 ) && 
+               ( ( packet_tcp_header.flags & static_cast<uint8_t>( tcp_flags::ACK ) ) == 0 );
     }
 
     bool is_syn( const std::vector<uint8_t>& packet ) {
@@ -252,7 +253,8 @@ namespace ntk {
     }
 
     bool is_syn_ack( const tcp_header& packet_tcp_header ) {
-        return is_syn( packet_tcp_header ) && is_ack( packet_tcp_header );
+        return ( ( packet_tcp_header.flags & static_cast<uint8_t>( tcp_flags::SYN ) ) != 0) && 
+               ( ( packet_tcp_header.flags & static_cast<uint8_t>( tcp_flags::ACK )) != 0);
     }
 
     bool is_syn_ack( const std::vector<uint8_t>& packet ) {
@@ -649,6 +651,24 @@ namespace ntk {
         return t.m_four;
     }
 
+    // tcp live stream
+
+    const tcp_handshake_feed& tcp_live_stream_friend_helper::handshake_feed( const tcp_live_stream& t ) {
+        return t.m_handshake_feed;
+    }
+
+    const tcp_termination_feed& tcp_live_stream_friend_helper::termination_feed( const tcp_live_stream& t ) {
+        return t.m_termination_feed;
+    }
+
+    const std::vector<std::vector<uint8_t>>& tcp_live_stream_friend_helper::traffic( const tcp_live_stream& t ) {
+        return t.m_traffic;
+    }
+
+    const four_tuple& tcp_live_stream_friend_helper::four( const tcp_live_stream& t ) {
+        return t.m_four;
+    }
+
     four_tuple flip_four( const four_tuple& four ) {
         four_tuple flipped;
 
@@ -708,13 +728,15 @@ namespace ntk {
         return !is_data_packet( packet ) && ( get_tcp_header( packet.data() ).flags & 0x10 );
     }
 
-    bool tcp_handshake_feed::feed( const std::vector<uint8_t>& packet ) {
+    bool tcp_handshake_feed::feed_packet( const std::vector<uint8_t>& packet ) {
 
         auto packet_tcp_header = get_tcp_header( packet.data() );
 
         if ( is_syn( packet ) ) {
             reset();
             m_syn = packet;
+
+            std::cout << "syn detected" << std::endl;
             return true;
         }
 
@@ -732,6 +754,25 @@ namespace ntk {
 
         return false;
     }
+
+    bool tcp_handshake_feed::feed( const std::vector<uint8_t>& packet ) { 
+        
+        bool accepted = feed_packet( packet );
+
+        if ( !accepted ) return false;
+
+        if ( m_syn && m_syn_ack && m_ack ) {
+            m_handshake = tcp_handshake {
+                .syn = *m_syn,
+                .syn_ack = *m_syn_ack,
+                .ack = *m_ack
+            };
+            m_complete = true;
+            std::cout << "handshake detected" << std::endl;
+        }
+
+        return true;
+    };
 
     bool tcp_termination_feed::feed_packet( const std::vector<uint8_t>& packet ) {
 
@@ -762,7 +803,7 @@ namespace ntk {
 
         if ( m_fin_1 && !m_ack_1 ) {
             if ( is_ack( packet_tcp_header ) &&
-                    packet_tcp_header.acknowledgment_number == m_fin_1_seq_number + 1 ) {
+                 packet_tcp_header.acknowledgment_number == m_fin_1_seq_number + 1 ) {
                 m_ack_1 = packet;
                 std::cout << "ack 1 set" << std::endl;
                 return true;
@@ -787,6 +828,7 @@ namespace ntk {
         
         if ( m_fin_1 && m_ack_1 && m_fin_2 && m_ack_2 ) {
             m_termination.closing_sequence = fin_ack_fin_ack{ *m_fin_1, *m_ack_1, *m_fin_2, *m_ack_2 };
+            std::cout << "termination detected" << std::endl;
             m_complete = true;
         }
 

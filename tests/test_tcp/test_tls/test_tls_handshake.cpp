@@ -629,7 +629,7 @@ TEST( LiveStreamTests, TCPEarthCamVideoSeqAckMatching ) {
 }
 
 
-TEST( PacketParsingPackets, TCPTinyCrossSeqAckMatching ) {
+TEST( PacketParsingTests, TCPTinyCrossSeqAckMatching ) {
 
     auto packet_data = ntk::read_packets_from_file( "../packet_data/tiny_cross.txt" );
     auto four_tuples = ntk::get_four_tuples( packet_data );
@@ -666,7 +666,15 @@ TEST( PacketParsingPackets, TCPTinyCrossSeqAckMatching ) {
     }
 }
 
-TEST( PacketParsingPackets, TCPCheckerBoardLiveStream ) {
+TEST( PacketParsingTests, TCPSynPacket ) {
+
+    auto packet_data = ntk::read_packets_from_file( "../packet_data/checkerboard.txt" );
+
+    ASSERT_TRUE( ntk::is_syn( packet_data[ 0 ] ) );
+}
+
+
+TEST( PacketParsingTests, TCPCheckerBoardLiveStream ) {
 
     auto packet_data = ntk::read_packets_from_file( "../packet_data/checkerboard.txt" );
     auto four_tuples = ntk::get_four_tuples( packet_data );
@@ -682,5 +690,11 @@ TEST( PacketParsingPackets, TCPCheckerBoardLiveStream ) {
     }
 
     ASSERT_TRUE( live_stream.is_complete() );
+
+    auto& handshake_feed = ntk::tcp_live_stream_friend_helper::handshake_feed( live_stream );
+
+    ASSERT_EQ( handshake_feed.m_handshake.syn, packet_data[ 0 ] );
+    ASSERT_EQ( handshake_feed.m_handshake.syn_ack, packet_data[ 1 ] );
+    ASSERT_EQ( handshake_feed.m_handshake.ack, packet_data[ 2 ] );
 }
 
