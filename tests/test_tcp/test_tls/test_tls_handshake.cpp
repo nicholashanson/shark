@@ -696,5 +696,16 @@ TEST( PacketParsingTests, TCPCheckerBoardLiveStream ) {
     ASSERT_EQ( handshake_feed.m_handshake.syn, packet_data[ 0 ] );
     ASSERT_EQ( handshake_feed.m_handshake.syn_ack, packet_data[ 1 ] );
     ASSERT_EQ( handshake_feed.m_handshake.ack, packet_data[ 2 ] );
+
+    auto& termination_feed = ntk::tcp_live_stream_friend_helper::termination_feed( live_stream );
+
+    auto& closing_sequence = std::get<ntk::fin_ack_fin_ack>( termination_feed.m_termination.closing_sequence );
+
+    ASSERT_EQ( closing_sequence[ 0 ], packet_data[ 25 ] );
+    ASSERT_EQ( closing_sequence[ 1 ], packet_data[ 28 ] );
+    ASSERT_EQ( closing_sequence[ 2 ], packet_data[ 26 ] );
+    ASSERT_EQ( closing_sequence[ 3 ], packet_data[ 27 ] );
 }
+
+
 
