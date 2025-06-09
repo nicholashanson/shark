@@ -131,6 +131,8 @@ namespace ntk {
 
         while ( std::getline( file, line ) ) {
 
+            if ( line.empty() || std::all_of( line.begin(), line.end(), isspace ) ) continue;
+
             if ( line[ 0 ] == '#' ) continue;
 
             std::istringstream iss( line );
@@ -166,6 +168,8 @@ namespace ntk {
         std::string line;
 
         while ( std::getline( file, line ) ) {
+
+            if ( line.empty() || std::all_of( line.begin(), line.end(), isspace ) ) continue;
 
             if ( line[ 0 ] == '#' ) continue;
 

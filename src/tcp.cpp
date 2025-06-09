@@ -838,28 +838,52 @@ namespace ntk {
     tcp_live_stream::tcp_live_stream( const four_tuple& four ) 
         : m_four( four ), m_handshake_feed( four ), m_termination_feed( four ) {}
 
-    bool tcp_live_stream::is_complete() {
+    bool tcp_live_stream::is_complete() const {
         return m_termination_feed.m_complete;
     }
 
-    void tcp_live_stream::feed( const std::vector<uint8_t>& packet ) {
+    bool tcp_live_stream::feed( const std::vector<uint8_t>& packet ) {
 
-        if ( is_complete() ) return;
+        if ( is_complete() ) return false;
 
-        if ( !is_same_connection( packet, m_four ) ) return;
+        if ( !is_same_connection( packet, m_four ) ) return false;
 
         bool handshake_packet = false;
         bool termination_packet = false;
         
         if ( !m_handshake_feed.m_complete ) handshake_packet = m_handshake_feed.feed( packet );
-
-        if ( handshake_packet ) return;
+        if ( handshake_packet ) return true;
 
         if ( !m_termination_feed.m_complete ) termination_packet = m_termination_feed.feed( packet );
-
-        if ( termination_packet ) return;
+        if ( termination_packet ) return true;
 
         m_traffic.push_back( packet );
+
+        return true;
+    }
+
+    void tcp_live_stream_session::feed( const std::vector<uint8_t>& packet ) {
+
+        auto packet_four = get_four_from_ethernet( packet );
+
+        if ( !m_four_tuples.contains( packet_four ) ) {
+            m_four_tuples.insert( packet_four );
+            m_live_streams.emplace_back( tcp_live_stream{ packet_four } );
+        } 
+
+        for ( auto& live_stream : m_live_streams ) {
+            bool accepted = live_stream.feed( packet );
+            if ( accepted ) break;
+        }
+    }
+
+    size_t tcp_live_stream_session::number_of_completed_transfers() {
+        
+        size_t n_completed_sessions = std::count_if( m_live_streams.begin(), m_live_streams.end(), [&]( const auto& stream ) {
+            return stream.is_complete();
+        });
+
+        return n_completed_sessions;
     }
 
 } // namespace ntk

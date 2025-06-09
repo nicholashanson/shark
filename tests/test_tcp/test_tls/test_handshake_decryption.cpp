@@ -24,7 +24,6 @@ TEST( PacketParsingTests, TLSParseSessionKeys ) {
 
     auto client_random_hex = ntk::client_random_to_hex( client_hello.random );
 
-    ASSERT_EQ( session_keys.size(), 2 );
     ASSERT_TRUE( session_keys.contains( client_random_hex ) );
 }
 

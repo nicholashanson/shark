@@ -191,8 +191,8 @@ namespace ntk {
     class tcp_live_stream {
         public:
             tcp_live_stream( const four_tuple& four );
-            bool is_complete();
-            void feed( const std::vector<uint8_t>& packet );
+            bool is_complete() const;
+            bool feed( const std::vector<uint8_t>& packet );
         private:
             tcp_handshake_feed m_handshake_feed;
             tcp_termination_feed m_termination_feed;
@@ -267,6 +267,19 @@ namespace ntk {
     bool is_reset( const std::vector<uint8_t>& packet );
 
     bool is_syn( const std::vector<uint8_t>& packet );
+
+    class tcp_live_stream_session { 
+
+        public:
+            tcp_live_stream_session() = default;
+            void feed( const std::vector<uint8_t>& packet );
+            size_t number_of_completed_transfers();
+        private:
+            std::vector<tcp_live_stream> m_live_streams;
+            std::unordered_set<four_tuple> m_four_tuples;
+
+            friend class tcp_live_stream_session_friend_helper;
+    }; 
 
 } // namespace ntk
 
