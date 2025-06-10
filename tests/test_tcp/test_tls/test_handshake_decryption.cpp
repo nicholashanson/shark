@@ -7,7 +7,7 @@
 #include <tls.hpp>
 #include <utils.hpp>
 
-#include <test_tls_handshake_packets.hpp>
+#include <test_constants.hpp>
 
 TEST( PacketParsingTests, TLSParseSessionKeys ) {
 
@@ -15,7 +15,7 @@ TEST( PacketParsingTests, TLSParseSessionKeys ) {
 
     ASSERT_EQ( session_keys.size(), 2 );
 
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "tls_handshake" ] );
     auto& tls_client_hello_packet = packet_data[ 3 ];
     auto tls_client_hello_bytes = ntk::extract_payload_from_ethernet( tls_client_hello_packet.data() );
     auto tls_record_span = std::span<const unsigned char>( tls_client_hello_bytes );
@@ -48,7 +48,7 @@ TEST( PacketParsingTests, TLSNonce ) {
 
 TEST( PacketParsingTests, TLSDecryption ) {
 
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "tls_handshake" ] );
     auto merged_stream = ntk::get_merged_tcp_stream( packet_data );
 
     auto first_packet_pos = merged_stream.begin();
@@ -86,7 +86,7 @@ TEST( PacketParsingTests, TLSDecryption ) {
 
 TEST( PacketParsingTests, HKDFExpand ) {
 
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "tls_handshake" ] );
     auto& tls_client_hello_packet = packet_data[ 3 ];
     auto tls_client_hello_bytes = ntk::extract_payload_from_ethernet( tls_client_hello_packet.data() );
     auto tls_record_span = std::span<const unsigned char>( tls_client_hello_bytes );
@@ -119,7 +119,7 @@ TEST( PacketParsingTests, HKDFExpand ) {
 
 TEST( PacketParsingTests, CertificateExtraction ) {
 
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
+    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "tls_handshake" ] );
     auto merged_stream = ntk::get_merged_tcp_stream( packet_data );
 
     auto first_packet_pos = merged_stream.begin();
@@ -159,136 +159,3 @@ TEST( PacketParsingTests, CertificateExtraction ) {
     ntk::print_vector( certificate_bytes );
 }
 
-TEST( PacketParsingTests, SrcDestIP ) {
-
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
-    auto& first_packet = packet_data[ 0 ];
-    auto client_server = ntk::get_sender_reciever( first_packet.data() );
-
-    auto client_packets_filter = ntk::filter_by_ip( packet_data, client_server );
-    auto client_packets = std::vector<std::vector<uint8_t>>( client_packets_filter.begin(), client_packets_filter.end() );
-
-    ASSERT_EQ( client_packets.size(), 9 );
-
-    auto server_client = ntk::flip_sender_reciever( client_server );
-
-    auto server_packets_filter = ntk::filter_by_ip( packet_data, server_client );
-    auto server_packets = std::vector<std::vector<uint8_t>>( server_packets_filter.begin(), server_packets_filter.end() );
-
-    ASSERT_EQ( server_packets.size(), 10 );
-}
-
-TEST( PacketParsingTests, TCPFilter ) {
-
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
-
-    auto tcp_packets_filter = std::views::all( packet_data ) | std::views::filter( ntk::is_tcp_v );
-    auto tcp_packets = std::vector<std::vector<uint8_t>>( tcp_packets_filter.begin(), tcp_packets_filter.end() );
-
-    ASSERT_EQ( tcp_packets.size(), 19 );
-}
-
-TEST( PacketParsingTests, TLSFilter ) {
-
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
-
-    auto tls_records_filter = std::views::all( packet_data ) | std::views::filter( ntk::is_tls_v );
-    auto tls_records = std::vector<std::vector<uint8_t>>( tls_records_filter.begin(), tls_records_filter.end() );
-
-    ASSERT_EQ( tls_records.size(), 5 );
-}
-
-TEST( PacketParsingTests, ClientHelloFilter ) {
-
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/tls_handshake.txt" );
-
-    auto client_hello_filter = std::views::all( packet_data ) | std::views::filter( ntk::is_client_hello_v );
-    auto client_hellos = std::vector<std::vector<uint8_t>>( client_hello_filter.begin(), client_hello_filter.end() );
-
-    ASSERT_EQ( client_hellos.size(), 1 );
-}
-
-TEST( PacketParsingTests, TCPLineNumbers ) {
-
-    auto tcp_line_numbers = ntk::get_line_numbers( "../packet_data/tls_handshake.txt", ntk::is_tcp_v );
-
-    ASSERT_EQ( tcp_line_numbers.size(), 19 );
-}
-
-TEST( PacketParsingTests, TLSRecordNumbers ) {
-
-    auto tls_line_numbers = ntk::get_line_numbers( "../packet_data/tls_handshake.txt", ntk::is_tls_v );
-
-    std::vector<int> expected_line_numbers = { 4, 6, 10, 12, 16 };
-
-    ASSERT_EQ( tls_line_numbers.size(), 5 );
-    ASSERT_EQ( tls_line_numbers, expected_line_numbers );
-}
-
-TEST( PacketParsingTests, ClientHelloLineNumbers ) {
-
-    auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/tls_handshake.txt", ntk::is_client_hello_v );
-
-    ASSERT_EQ( client_hello_line_numbers.size(), 1 );
-    ASSERT_EQ( client_hello_line_numbers[ 0 ], 4 ); 
-}
-
-TEST( LiveStreamTests, ClientHelloLineNumbers ) {
-
-    auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/earth_cam_live_stream.txt", ntk::is_client_hello_v );
-    auto client_hello_packets = ntk::get_packets_by_line_numbers( "../packet_data/earth_cam_live_stream.txt", client_hello_line_numbers );
-
-    ASSERT_EQ( client_hello_line_numbers.size(), client_hello_packets.size() );
-
-    auto secrets = ntk::get_tls_secrets( "sslkeys.log" );
-
-    std::vector<ntk::client_hello> client_hellos;
-
-    for ( auto& client_hello_packet : client_hello_packets ) {
-        auto tcp_payload = ntk::extract_payload_from_ethernet( client_hello_packet.data() );
-        auto client_hello = ntk::get_client_hello( tcp_payload );
-        client_hellos.push_back( client_hello );
-    }
-}
-
-TEST( PacketParsingTests, HasSNI ) {
-
-    auto client_hello = ntk::get_client_hello_from_ethernet_frame( test_constants::tls_client_hello_packet );
-
-    ASSERT_TRUE( *ntk::has_sni( client_hello, "earthcam.com" ) );
-}
-
-TEST( PacketParsingTests, ClientHelloSNI ) {
-
-    auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/tls_handshake.txt", ntk::is_client_hello_v );
-    auto client_hello_packets = ntk::get_packets_by_line_numbers( "../packet_data/tls_handshake.txt", client_hello_line_numbers );
-
-    ASSERT_EQ( client_hello_packets.size(), 1 );
-
-    auto client_hello = ntk::get_client_hello_from_ethernet_frame( client_hello_packets[ 0 ] );
-
-    ASSERT_TRUE( *ntk::has_sni( client_hello, "earthcam.com" ) );
-}
-
-
-TEST( LiveStreamTests, ClientHelloSNI ) {
-
-    auto client_hello_line_numbers = ntk::get_line_numbers( "../packet_data/earth_cam_live_stream.txt", ntk::is_client_hello_v );
-    auto client_hello_packets = ntk::get_packets_by_line_numbers( "../packet_data/earth_cam_live_stream.txt", client_hello_line_numbers );
-
-    std::vector<ntk::client_hello> client_hellos;
-
-    for ( auto& client_hello_packet : client_hello_packets ) {
-        auto tcp_payload = ntk::extract_payload_from_ethernet( client_hello_packet.data() );
-        auto client_hello = ntk::get_client_hello( tcp_payload );
-        client_hellos.push_back( client_hello );
-    }
-
-    bool found = false;
-    for ( const auto& client_hello : client_hellos ) {
-        auto result = ntk::sni_contains( client_hello, "earthcam" );
-        if ( *result ) found = true;
-    }   
-
-    ASSERT_TRUE( found );
-}

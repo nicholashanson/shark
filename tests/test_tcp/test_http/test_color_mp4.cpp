@@ -1,17 +1,19 @@
-#include <vector>
-
 #include <gtest/gtest.h>
 
 #include <http.hpp>
 #include <utils.hpp>
+#include <test_constants.hpp>
 
 #include <qt.hpp>
 
 #include <cstdlib>
+#include <vector>
 
 TEST( PacketParsingTests, MP4ContentLengthHeader ) {
 
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/color.txt" );
+    std::cout << test::packet_data_files[ "color" ] << std::endl;
+
+    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "color" ] );
     auto http_response = ntk::get_first_http_respone( packet_data );
     auto http_headers = ntk::get_http_headers_from_payload( http_response );
 
@@ -20,8 +22,7 @@ TEST( PacketParsingTests, MP4ContentLengthHeader ) {
 
 TEST( PacketParsingTests, ExtractMP4 ) {
 
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/color.txt" );
-    
+    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "color" ] );
     auto merged_stream = ntk::get_merged_tcp_stream( packet_data );
     auto response_data = ntk::get_http_response_data( merged_stream ); 
 

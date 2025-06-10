@@ -1,12 +1,23 @@
-/*
-TEST( LiveStreamTests, TCPEarthCamVideoSeqAckMatching ) {
+#include <gtest/gtest.h>
 
-    auto packet_data = ntk::read_packets_from_file( "../packet_data/earth_cam_video.txt" );
+#include <span>
+#include <cstdint>
+
+#include <tls.hpp>
+#include <utils.hpp>
+
+#include <test_constants.hpp>
+
+TEST( PacketParsingTests, TCPTinyCrossSeqAckMatching ) {
+
+    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "tiny_cross" ] );
     auto four_tuples = ntk::get_four_tuples( packet_data );
     auto four_tuple = *four_tuples.begin();
 
     ntk::tls_over_tcp tls_transfer( four_tuple );
     tls_transfer.load( packet_data );
+
+    std::cout << "loaded packet data" << std::endl;
 
     auto& client_traffic = ntk::tcp_transfer_friend_helper::client_traffic( tls_transfer );
     auto& server_traffic = ntk::tcp_transfer_friend_helper::server_traffic( tls_transfer );
@@ -26,18 +37,10 @@ TEST( LiveStreamTests, TCPEarthCamVideoSeqAckMatching ) {
         bool found = std::any_of( client_acks.begin(), client_acks.end(),
             [&]( const std::vector<uint8_t>& client_packet ) {
                 ntk::tcp_header client_tcp_header = ntk::get_tcp_header( client_packet.data() );
+                std::cout << "server ack: " << client_tcp_header.acknowledgment_number << std::endl;
                 return client_tcp_header.acknowledgment_number == expected_ack;
         });
 
         ASSERT_TRUE( found );
     }
 }
-*/
-
-
-
-
-
-
-
-

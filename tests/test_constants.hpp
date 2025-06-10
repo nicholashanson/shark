@@ -3,6 +3,18 @@
 
 namespace test {
 
+    inline std::string packet_data_dir = "../packet_data";
+
+    inline std::map<std::string,std::string> packet_data_files = {
+        { "lena", packet_data_dir + "/lena.txt" },
+        { "checkerboard", packet_data_dir + "/checkerboard.txt" },
+        { "color", packet_data_dir + "/color.txt" },
+        { "tiny_cross", packet_data_dir + "/tiny_cross.txt" },
+        { "tls_handshake", packet_data_dir + "/tls_handshake.txt" },
+        { "earth_cam_live_stream", packet_data_dir + "/earth_cam_live_stream.txt" },
+        { "earth_cam_video", packet_data_dir + "/earth_cam_video.txt" }
+    };
+
     //inline const unsigned char http_partial_request[] = {}
 
     inline const unsigned char mp4_meta_data[] = {
