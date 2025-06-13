@@ -13,9 +13,11 @@
 
 #include <constants.hpp>
 #include <tcp.hpp>
-#include <utils.hpp>
 
 namespace ntk {
+
+    // TODO: check http rules on whitespace in headers
+    std::string trim( const std::string& str );
 
     using http_headers = std::unordered_map<std::string,std::string>;
 
@@ -41,6 +43,17 @@ namespace ntk {
         std::string method_token;
         std::string path;
         std::string http_version;
+    };
+
+    struct http_request {
+        http_request_line request_line;
+        http_headers headers;
+    };
+
+    struct http_response {
+        http_response_status_line status_line;
+        http_headers headers;
+        std::vector<uint8_t> body;
     };
 
     std::vector<uint8_t> extract_http_payload_from_ethernet( const unsigned char* ethernet_frame );
@@ -80,6 +93,8 @@ namespace ntk {
     */
     http_type get_http_type( const std::vector<uint8_t>& http_payload );
 
+    bool is_http( const std::vector<uint8_t>& maybe_http_payload );
+
     std::vector<uint8_t> decode_single_chunk( const std::vector<uint8_t>& chunked_body );
 
     std::vector<uint8_t> decode_chunked_http_body( const std::vector<uint8_t>& chunked_body );
@@ -87,6 +102,11 @@ namespace ntk {
     std::vector<uint8_t> get_first_http_respone( const session& packet_data );
 
     std::vector<uint8_t> get_http_response_data( const tcp_stream& stream );
-}
+
+    http_request get_http_request( const std::vector<uint8_t>& http_payload );
+
+    http_response get_http_response( const std::vector<uint8_t>& http_payload );
+
+} // namespace ntk
 
 #endif

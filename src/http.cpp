@@ -2,6 +2,27 @@
 
 namespace ntk {
 
+    std::string trim( const std::string& str ) {
+        
+        size_t start = str.find_first_not_of(" \t\r\n" );
+        size_t end = str.find_last_not_of(" \t\r\n" );
+
+        return ( start == std::string::npos || end == std::string::npos )
+            ? ""
+            : str.substr( start, end - start + 1 );
+    }
+
+    bool is_http( const std::vector<uint8_t>& maybe_http_payload ) {
+
+        std::string first_five( maybe_http_payload.begin(), maybe_http_payload.begin() + 5 );
+
+        if ( first_five.compare( 0, 5, "HTTP/" ) == 0 || first_five.compare( 0, 3, "GET" ) == 0 ) {
+            return true;
+        }
+        
+        return false;
+    }
+
     http_type get_http_type( const std::vector<uint8_t>& http_payload ) {
 
         std::string first_five( http_payload.begin(), http_payload.begin() + 5 );
@@ -65,13 +86,11 @@ namespace ntk {
     http_request_line parse_http_request_line( const std::vector<uint8_t>& request_line_bytes ) {
 
         std::string request_line_string( request_line_bytes.begin(), request_line_bytes.end() );
-
         std::stringstream request_line_stream( request_line_string );
-
         http_request_line r_line;
 
         request_line_stream >> r_line.method_token >> r_line.path >> r_line.http_version;
-
+        
         return r_line;
     }
 
@@ -82,7 +101,6 @@ namespace ntk {
     http_headers parse_http_headers(const std::vector<uint8_t>& header_bytes) {
         
         std::string headers_string( header_bytes.begin(), header_bytes.end() );
-        
         http_headers headers;
 
         size_t pos = 0;
@@ -90,7 +108,6 @@ namespace ntk {
         while ( pos < headers_string.size() ) {
             
             size_t line_end = headers_string.find( "\r\n", pos );
-
             std::string line;
 
             if ( line_end == std::string::npos ) {
@@ -101,8 +118,7 @@ namespace ntk {
                 pos = line_end + 2; 
             }
 
-            size_t colon_pos = line.find(':');
-
+            size_t colon_pos = line.find( ':' );
             std::string key = trim( line.substr( 0, colon_pos ) );
             std::string value = trim( line.substr( colon_pos + 1 ) );
 
@@ -113,7 +129,6 @@ namespace ntk {
     }
 
     http_headers get_http_headers_from_payload( const std::vector<uint8_t>& http_payload_bytes ) {
-
         auto http_header_bytes = std::get<1>( split_http_payload( http_payload_bytes ) );
         return parse_http_headers( http_header_bytes );
     }
@@ -121,11 +136,9 @@ namespace ntk {
     http_response_status_line parse_http_status_line( const std::vector<uint8_t>& status_line_bytes ) {
 
         std::string line( status_line_bytes.begin(), status_line_bytes.end() );
-
         std::istringstream stream(line);
         
         http_response_status_line status_line;
-
         stream >> status_line.http_version;
 
         std::string status_code_string;
@@ -141,11 +154,9 @@ namespace ntk {
     }
 
     std::vector<uint8_t> decode_single_chunk( const std::vector<uint8_t>& chunked_body ) {
-
         auto it = std::search( chunked_body.begin(), chunked_body.end(), "\r\n", "\r\n" + 2 );
         size_t chunk_size = std::stoul( std::string( chunked_body.begin(), it ), nullptr, 16 );
         auto data_start = it + 2;
-
         return std::vector<uint8_t>( data_start, data_start + chunk_size );
     }
 
@@ -200,9 +211,7 @@ namespace ntk {
         );
 
         auto response = *response_pos;
-
         auto http_headers = get_http_headers_from_payload( response.second );
-
         auto response_data = std::get<2>( split_http_payload( response.second ) );
 
         auto it = std::next( response_pos );
@@ -218,6 +227,29 @@ namespace ntk {
         } else {
             return decode_chunked_http_body( response_data );
         }
+    }
+
+    http_request get_http_request( const std::vector<uint8_t>& http_payload ) {
+
+        http_request request;
+
+        auto [ request_line_bytes, header_bytes, unused_bytes ] = split_http_payload( http_payload );
+        request.request_line = parse_http_request_line( request_line_bytes );
+        request.headers = parse_http_headers( header_bytes );
+
+        return request;
+    }
+
+    http_response get_http_response( const std::vector<uint8_t>& http_payload ) {
+
+        http_response response;
+
+        auto [ status_line_bytes, header_bytes, body_bytes ] = split_http_payload( http_payload );
+        response.status_line = parse_http_status_line( status_line_bytes );
+        response.headers = parse_http_headers( header_bytes );
+        response.body = body_bytes;
+
+        return response;
     }
 
 } // namespace ntk
