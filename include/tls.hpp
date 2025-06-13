@@ -43,14 +43,27 @@ namespace ntk {
         APPLICATION_DATA // 0x17
     };
 
+    static const std::unordered_map<tls_content_type,std::string> tls_content_type_names = {
+        { tls_content_type::CHANGE_CIPHER_SEC, "ChangeCipherSpec" },
+        { tls_content_type::ALERT, "Alert" },
+        { tls_content_type::HANDSHAKE, "Handshake" },
+        { tls_content_type::APPLICATION_DATA, "Application Data" }
+    };
+
     enum class cipher_suite : uint16_t {
-        TLS_AES_256_GCM_SHA384 = 0x1302
+        TLS_AES_128_GCM_SHA256 =  0x1301,
+        TLS_AES_256_GCM_SHA384 // 0x1302
     };
 
     struct tls_record {
         tls_content_type content_type;
         uint16_t version;
         std::vector<uint8_t> payload;
+    };
+
+    struct tls_record_extraction_result {
+        std::vector<tls_record> records;
+        bool has_remainder;
     };
 
     struct client_hello {
@@ -60,6 +73,15 @@ namespace ntk {
         std::vector<uint8_t> cipher_suites;
         std::vector<uint8_t> compression_methods;
         std::vector<uint8_t> extensions;
+
+        bool operator==( const client_hello& other ) const {
+            return client_version == other.client_version &&
+                   random == other.random &&
+                   session_id == other.session_id &&
+                   cipher_suites == other.cipher_suites &&
+                   compression_methods == other.compression_methods &&
+                   extensions == other.extensions;
+        }
     };
 
     struct server_hello {
@@ -94,6 +116,8 @@ namespace ntk {
     std::string client_random_to_hex( const std::array<uint8_t,32>& random );
 
     std::string session_id_to_hex( const std::vector<uint8_t>& session_id );
+
+    std::string string_to_hex( const std::vector<uint8_t>& data );
 
     tls_key_material derive_tls_key_iv( const std::vector<uint8_t>& secret, const EVP_MD* hash_func,
                                         size_t key_len, size_t iv_len );
@@ -134,9 +158,19 @@ namespace ntk {
 
     bool is_client_hello_v( const std::vector<uint8_t>& packet );
 
+    bool is_client_hello( const tls_record& record );
+
+    bool is_server_hello( const unsigned char* packet );
+
+    bool is_server_hello_v( const std::vector<uint8_t>& packet );
+
+    bool is_server_hello( const tls_record& record );
+
     bool is_tls_alert( const unsigned char* packet );
     
     bool is_tls_alert_v( const std::vector<uint8_t>& packet );
+
+    bool is_tls_application_data( const tls_record& record );
 
     bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs );
 
@@ -158,9 +192,13 @@ namespace ntk {
 
     client_hello get_client_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame );
 
+    client_hello get_client_hello( const tls_record& record );
+
     server_hello get_server_hello_from_ethernet_frame( const unsigned char* ethernet_frame );
 
     server_hello get_server_hello_from_ethernet_frame( const std::vector<uint8_t>& ethernet_frame );
+
+    server_hello get_server_hello( const tls_record& record );
 
     class tls_over_tcp : public tcp_transfer {
         public:
@@ -169,6 +207,76 @@ namespace ntk {
             client_hello c_hello;
             server_hello s_hello;
     };
+
+    class tls_live_stream : public tcp_live_stream {
+
+        public:
+            tls_live_stream( const tcp_live_stream& tcp_stream );
+            const std::string& get_sni() const;
+        
+        private:
+            client_hello m_client_hello;
+            server_hello m_server_hello;
+
+            std::string m_sni;
+
+            friend std::ostream& operator<<( std::ostream& os, const tls_live_stream& live_stream );
+    };
+
+    struct tls_filter {
+        bool operator()( const ntk::tcp_live_stream& stream ) {
+            return stream.traffic_contains( is_client_hello_v );
+        }
+    };
+
+    struct sni_filter {
+
+        bool operator()( const ntk::tcp_live_stream& stream ) {
+
+            auto has_matching_sni = [&]( const std::vector<uint8_t> packet ) {
+                if ( is_client_hello_v( packet ) ) {
+                    auto client_hello = get_client_hello_from_ethernet_frame( packet );
+                    auto result = sni_contains( client_hello, m_sni );
+                    if ( result.has_value() ) {
+                        return result.value(); 
+                    } else {
+                        return false;
+                    } 
+                }
+                return false;
+            };
+
+            return stream.traffic_contains( has_matching_sni );
+        }
+
+        sni_filter( const std::string& sni )
+            : m_sni( sni ) {}
+
+        std::string m_sni;
+    };
+
+    std::vector<tls_record> decrypt_tls_data_( const std::array<uint8_t,32>& client_random,
+                                               const std::array<uint8_t,32>& server_random,
+                                               const uint16_t tls_version,
+                                               const uint16_t cipher_suite,
+                                               const std::vector<tls_record>& encrypted_records,
+                                               const secrets& session_keys,
+                                               const std::string& secret_label );
+
+    tls_record decrypt_record_( const std::array<uint8_t,32>& client_random,
+                                const std::array<uint8_t,32>& server_random,
+                                const uint16_t tls_version,
+                                const uint16_t cipher_suite,
+                                const tls_record& record,
+                                const secrets& session_keys,
+                                const std::string& secret_label,
+                                uint64_t seq_num );
+
+    bool is_tls_payload( const std::vector<uint8_t>& payload );
+
+    tls_record_extraction_result extract_tls_records( const std::vector<std::vector<uint8_t>>& payloads );
+
+    std::expected<tls_record,std::string> get_tls_record_from_ethernet( std::span<const uint8_t> packet );
 
 } // namespace ntk
 

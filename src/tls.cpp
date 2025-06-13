@@ -36,14 +36,12 @@ namespace ntk {
         return c_hello;
     }
 
-    client_hello get_client_hello( const std::span<const uint8_t> tcp_payload ) {
-        
+    client_hello get_client_hello( const std::span<const uint8_t> tcp_payload ) {   
         auto client_hello_bytes = tcp_payload.subspan( 9 );
         return parse_client_hello( client_hello_bytes );
     }
 
-    client_hello get_client_hello( const std::vector<uint8_t>& tcp_payload ) {
-        
+    client_hello get_client_hello( const std::vector<uint8_t>& tcp_payload ) {     
         auto tls_record_span = std::span<const uint8_t>( tcp_payload );
         auto client_hello_bytes = tls_record_span.subspan( 9 );
         return parse_client_hello( client_hello_bytes );
@@ -80,7 +78,6 @@ namespace ntk {
     }
 
     server_hello get_server_hello( const std::span<const uint8_t> tcp_payload ) {
-        
         auto server_hello_bytes = tcp_payload.subspan( 9 );
         return parse_server_hello( server_hello_bytes );
     }
@@ -190,11 +187,12 @@ namespace ntk {
                 secret.push_back( std::stoi( secret_hex.substr( i, 2 ), nullptr, 16 ) );
             }
 
-            if ( client_random_hex == client_random_h ) 
+            if ( client_random_hex == client_random_h ) {
                 tls_secrets[ client_random_hex ][ label ] = secret;
 
-            if ( is_complete_secrets( tls_secrets[ client_random_hex ] ) )
-                break;
+                if ( is_complete_secrets( tls_secrets[ client_random_hex ] ) )
+                    break;
+            }
         }
 
         return tls_secrets;
@@ -323,6 +321,38 @@ namespace ntk {
         return plain_text;
     }
 
+    std::vector<uint8_t> decrypt_aes_gcm_( const std::vector<uint8_t>& key,
+                                           const std::vector<uint8_t>& nonce,
+                                           const std::vector<uint8_t>& aad,
+                                           const std::vector<uint8_t>& cipher_text_with_tag ) {
+        
+        size_t cipher_len = cipher_text_with_tag.size() - 16;
+
+        const uint8_t* tag = &cipher_text_with_tag[ cipher_len ];
+        const uint8_t* cipher_text = &cipher_text_with_tag[ 0 ];
+    
+        std::vector<uint8_t> plain_text( cipher_len );
+
+        EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+
+        EVP_DecryptInit_ex( ctx, EVP_aes_128_gcm(), nullptr, nullptr, nullptr );
+        EVP_CIPHER_CTX_ctrl( ctx, EVP_CTRL_GCM_SET_IVLEN, nonce.size(), nullptr );
+        EVP_DecryptInit_ex( ctx, nullptr, nullptr, key.data(), nonce.data() );
+
+        int len = 0;
+        EVP_DecryptUpdate( ctx, nullptr, &len, aad.data(), aad.size() );
+        EVP_DecryptUpdate( ctx, plain_text.data(), &len, cipher_text, cipher_len );
+        EVP_CIPHER_CTX_ctrl( ctx, EVP_CTRL_GCM_SET_TAG, 16, ( void* )tag );
+
+        if ( EVP_DecryptFinal_ex( ctx, plain_text.data() + len, &len) <= 0 ) {
+            EVP_CIPHER_CTX_free( ctx );
+            throw std::runtime_error( "GCM decryption failed ( tag mismatch )" );
+        }
+
+        EVP_CIPHER_CTX_free( ctx );
+        return plain_text;
+    }
+
     std::vector<uint8_t> build_tls13_aad( tls_content_type content_type, uint16_t version, uint16_t length ) {
         return {
             static_cast<uint8_t>( content_type ),        
@@ -366,6 +396,39 @@ namespace ntk {
         return result;
     }
 
+    std::vector<tls_record> decrypt_tls_data_( const std::array<uint8_t,32>& client_random,
+                                               const std::array<uint8_t,32>& server_random,
+                                               const uint16_t tls_version,
+                                               const uint16_t cipher_suite,
+                                               const std::vector<tls_record>& encrypted_records,
+                                               const secrets& session_keys,
+                                               const std::string& secret_label ) {
+
+        auto secret = get_traffic_secret( session_keys, client_random, secret_label );
+
+        auto key_material = derive_tls_key_iv( secret, EVP_sha256(), 32, 12 );
+
+        std::vector<tls_record> result;
+        uint64_t seq_num = 0;
+
+        for ( const auto& record : encrypted_records ) {
+
+            if ( record.content_type != tls_content_type::APPLICATION_DATA ) {
+                result.push_back( record );
+                continue;
+            }
+
+            auto nonce = build_tls13_nonce( key_material.iv, seq_num );
+            auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
+            auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload );
+
+            result.push_back( { record.content_type, record.version, decrypted_payload } );
+            seq_num++;
+        }
+
+        return result;
+    }
+
     tls_record decrypt_record( const std::array<uint8_t,32>& client_random,
                                const std::array<uint8_t,32>& server_random,
                                const uint16_t tls_version,
@@ -380,6 +443,29 @@ namespace ntk {
         auto nonce = build_tls13_nonce( key_material.iv, seq_num );
         auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
         auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload );
+
+        tls_record result { 
+            record.content_type, 
+            record.version, 
+            decrypted_payload };
+
+        return result;
+    }
+
+    tls_record decrypt_record_( const std::array<uint8_t,32>& client_random,
+                                const std::array<uint8_t,32>& server_random,
+                                const uint16_t tls_version,
+                                const uint16_t cipher_suite,
+                                const tls_record& record,
+                                const secrets& session_keys,
+                                const std::string& secret_label,
+                                uint64_t seq_num ) {
+
+        auto secret = get_traffic_secret( session_keys, client_random, secret_label );
+        auto key_material = derive_tls_key_iv( secret, EVP_sha256(), 16, 12 );
+        auto nonce = build_tls13_nonce( key_material.iv, seq_num );
+        auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
+        auto decrypted_payload = decrypt_aes_gcm_( key_material.key, nonce, aad, record.payload );
 
         tls_record result { 
             record.content_type, 
@@ -431,6 +517,17 @@ namespace ntk {
         return is_tls( packet.data() );
     }
 
+    bool is_tls_payload( const std::vector<uint8_t>& payload ) {
+
+        uint8_t content_type = payload[ 0 ];
+        uint8_t major_version = payload[ 1 ];
+
+        if ( content_type < 20 || content_type > 23 ) return false; 
+        if ( major_version != 3 ) return false;
+
+        return true;
+    }
+
     bool is_client_hello( const unsigned char* packet ) {
 
         if ( !is_tls( packet ) ) return false;
@@ -446,6 +543,42 @@ namespace ntk {
 
     bool is_client_hello_v( const std::vector<uint8_t>& packet ) {
         return is_client_hello( packet.data() );
+    }
+
+    bool is_client_hello(const tls_record& record) {
+        if ( record.content_type != tls_content_type::HANDSHAKE ) return false;
+
+        if ( record.payload.empty() ) return false;
+
+        uint8_t handshake_type = record.payload[0];
+        return handshake_type == 2;
+    }
+
+    bool is_server_hello( const unsigned char* packet ) {
+        if ( !is_tls( packet ) ) return false;
+
+        auto tls_record = extract_payload_from_ethernet( packet );
+
+        if ( tls_record.size() < 6 ) return false;
+
+        uint8_t content_type = tls_record[ 0 ];
+        if ( content_type != 22 ) return false;
+
+        uint8_t handshake_type = tls_record[ 5 ];
+        return handshake_type == 2; 
+    }
+
+    bool is_server_hello_v( const std::vector<uint8_t>& packet ) {
+        return is_server_hello( packet.data() );
+    }
+
+    bool is_server_hello(const tls_record& record) {
+        if ( record.content_type != tls_content_type::HANDSHAKE ) return false;
+
+        if ( record.payload.empty() ) return false;
+
+        uint8_t handshake_type = record.payload[0];
+        return handshake_type == 2;
     }
 
     bool is_tls_alert( const unsigned char* packet ) {
@@ -471,6 +604,10 @@ namespace ntk {
 
     bool is_tls_alert_v( const std::vector<uint8_t>& packet ) {
         return is_tls_alert( packet.data() );
+    }
+
+    bool is_tls_application_data( const tls_record& record ) {
+        return record.content_type == tls_content_type::APPLICATION_DATA;
     }
 
     bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs ) {
@@ -574,6 +711,8 @@ namespace ntk {
             return std::unexpected( result.error() );  
         }
 
+        std::cout << "detected sni: " << result.value() << std::endl;
+
         return result.value().contains( host );
     }
 
@@ -628,6 +767,11 @@ namespace ntk {
         return get_client_hello_from_ethernet_frame( ethernet_frame.data() );
     }
 
+    client_hello get_client_hello( const tls_record& record ) {
+        auto client_hello_bytes = std::span<const uint8_t>( record.payload ).subspan( 4 );
+        return parse_client_hello( client_hello_bytes );
+    }
+
     server_hello get_server_hello_from_ethernet_frame( const unsigned char* ethernet_frame ) {
         auto tcp_payload = std::span<const uint8_t>( extract_payload_from_ethernet( ethernet_frame ) );
         return get_server_hello( tcp_payload );
@@ -637,7 +781,79 @@ namespace ntk {
         return get_server_hello_from_ethernet_frame( ethernet_frame.data() );
     }
 
+    server_hello get_server_hello( const tls_record& record ) {
+        auto server_hello_bytes = std::span<const uint8_t>( record.payload ).subspan( 4 );
+        return parse_server_hello( server_hello_bytes ); 
+    }
+
     tls_over_tcp::tls_over_tcp( const four_tuple& four )
         : tcp_transfer( four ) {}
+
+    tls_live_stream::tls_live_stream( const tcp_live_stream& tcp_stream ) 
+        : tcp_live_stream( tcp_stream ) {
+        
+        for ( auto& packet : m_traffic ) {
+            if ( is_client_hello_v( packet ) ) {
+                m_client_hello = get_client_hello_from_ethernet_frame( packet );
+                break;
+            }
+        }
+
+        auto sni_result = ntk::get_sni( m_client_hello );
+
+        if ( sni_result.has_value() ) {
+            m_sni = sni_result.value();
+        } else {
+            m_sni = sni_result.error();
+        }
+    }
+
+    const std::string& tls_live_stream::get_sni() const {
+        return m_sni;
+    }
+
+    std::string string_to_hex( const std::vector<uint8_t>& data ) {
+        return session_id_to_hex( data );
+    }
+
+    tls_record_extraction_result extract_tls_records( const std::vector<std::vector<uint8_t>>& payloads ) {
+
+        tls_record_extraction_result result;
+
+        std::vector<uint8_t> remainder;
+
+        for ( auto& payload : payloads ) {
+
+            std::vector<uint8_t> cumulative_payload;
+
+            cumulative_payload.insert( cumulative_payload.end(), remainder.begin(), remainder.end() );
+            cumulative_payload.insert( cumulative_payload.end(), payload.begin(), payload.end() );
+
+            auto [ complete_records, offset_reached ] = *split_tls_records( cumulative_payload );
+
+            result.records.insert( result.records.end(), complete_records.begin(), complete_records.end() );
+            remainder.assign( cumulative_payload.begin() + offset_reached, cumulative_payload.end() );
+        }
+
+        result.has_remainder = !remainder.empty();
+
+        return result;
+    }
+
+    std::expected<tls_record,std::string> get_tls_record_from_ethernet( std::span<const uint8_t> packet ) {
+
+        auto payload = extract_payload_from_ethernet( packet.data() );
+
+        auto result = split_tls_records( payload );
+
+        if ( result.has_value() ) {
+            auto [ records, offset_reached ] = result.value();
+            if ( records.size() == 0 ) return std::unexpected( "Packet does not contain any records" );
+            if ( records.size() != 1 || offset_reached != payload.size() ) std::unexpected( "Packet does not contain a single complete record" );
+            return records[ 0 ];
+        } else {
+            return std::unexpected( result.error() );
+        }
+    }
 
 } // namespace ntk
