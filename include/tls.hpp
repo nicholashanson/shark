@@ -43,6 +43,11 @@ namespace ntk {
         APPLICATION_DATA // 0x17
     };
 
+    enum class cipher_suite : uint16_t {
+        TLS_AES_128_GCM_SHA256 =  0x1301,
+        TLS_AES_256_GCM_SHA384 // 0x1302
+    };
+
     static const std::unordered_map<tls_content_type,std::string> tls_content_type_names = {
         { tls_content_type::CHANGE_CIPHER_SEC, "ChangeCipherSpec" },
         { tls_content_type::ALERT, "Alert" },
@@ -50,9 +55,9 @@ namespace ntk {
         { tls_content_type::APPLICATION_DATA, "Application Data" }
     };
 
-    enum class cipher_suite : uint16_t {
-        TLS_AES_128_GCM_SHA256 =  0x1301,
-        TLS_AES_256_GCM_SHA384 // 0x1302
+    static const std::unordered_map<cipher_suite,std::string> tls_cipher_suite_names = {
+        { cipher_suite::TLS_AES_128_GCM_SHA256, "TLS_AES_128_GCM_SHA256" },
+        { cipher_suite::TLS_AES_256_GCM_SHA384, "TLS_AES_256_GCM_SHA384" }
     };
 
     struct tls_record {
@@ -126,7 +131,7 @@ namespace ntk {
         const std::array<uint8_t,32>& client_random,
         const std::array<uint8_t,32>& server_random,
         const uint16_t tls_version,
-        const uint16_t cipher_suite,
+        const uint16_t cipher_suite_id,
         const std::vector<tls_record>& encrypted_records,
         const secrets& session_keys,
         const std::string& secret_label = "SERVER_HANDSHAKE_TRAFFIC_SECRET" );
@@ -134,7 +139,7 @@ namespace ntk {
     tls_record decrypt_record( const std::array<uint8_t,32>& client_random,
                                const std::array<uint8_t,32>& server_random,
                                const uint16_t tls_version,
-                               const uint16_t cipher_suite,
+                               const uint16_t cipher_suite_id,
                                const tls_record& record,
                                const secrets& session_keys,
                                const std::string& secret_label,
@@ -171,6 +176,8 @@ namespace ntk {
     bool is_tls_alert_v( const std::vector<uint8_t>& packet );
 
     bool is_tls_application_data( const tls_record& record );
+
+    bool is_tls_payload( const std::vector<uint8_t>& payload );
 
     bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs );
 
@@ -209,70 +216,27 @@ namespace ntk {
     };
 
     class tls_live_stream : public tcp_live_stream {
-
         public:
             tls_live_stream( const tcp_live_stream& tcp_stream );
             const std::string& get_sni() const;
-        
         private:
             client_hello m_client_hello;
             server_hello m_server_hello;
-
             std::string m_sni;
 
             friend std::ostream& operator<<( std::ostream& os, const tls_live_stream& live_stream );
     };
 
     struct tls_filter {
-        bool operator()( const ntk::tcp_live_stream& stream ) {
-            return stream.traffic_contains( is_client_hello_v );
-        }
+        bool operator()( const ntk::tcp_live_stream& stream );
     };
 
     struct sni_filter {
-
-        bool operator()( const ntk::tcp_live_stream& stream ) {
-
-            auto has_matching_sni = [&]( const std::vector<uint8_t> packet ) {
-                if ( is_client_hello_v( packet ) ) {
-                    auto client_hello = get_client_hello_from_ethernet_frame( packet );
-                    auto result = sni_contains( client_hello, m_sni );
-                    if ( result.has_value() ) {
-                        return result.value(); 
-                    } else {
-                        return false;
-                    } 
-                }
-                return false;
-            };
-
-            return stream.traffic_contains( has_matching_sni );
-        }
-
-        sni_filter( const std::string& sni )
-            : m_sni( sni ) {}
+        bool operator()( const ntk::tcp_live_stream& stream );
+        sni_filter( const std::string& sni );
 
         std::string m_sni;
     };
-
-    std::vector<tls_record> decrypt_tls_data_( const std::array<uint8_t,32>& client_random,
-                                               const std::array<uint8_t,32>& server_random,
-                                               const uint16_t tls_version,
-                                               const uint16_t cipher_suite,
-                                               const std::vector<tls_record>& encrypted_records,
-                                               const secrets& session_keys,
-                                               const std::string& secret_label );
-
-    tls_record decrypt_record_( const std::array<uint8_t,32>& client_random,
-                                const std::array<uint8_t,32>& server_random,
-                                const uint16_t tls_version,
-                                const uint16_t cipher_suite,
-                                const tls_record& record,
-                                const secrets& session_keys,
-                                const std::string& secret_label,
-                                uint64_t seq_num );
-
-    bool is_tls_payload( const std::vector<uint8_t>& payload );
 
     tls_record_extraction_result extract_tls_records( const std::vector<std::vector<uint8_t>>& payloads );
 

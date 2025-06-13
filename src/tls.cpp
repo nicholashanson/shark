@@ -292,7 +292,8 @@ namespace ntk {
     std::vector<uint8_t> decrypt_aes_gcm( const std::vector<uint8_t>& key,
                                           const std::vector<uint8_t>& nonce,
                                           const std::vector<uint8_t>& aad,
-                                          const std::vector<uint8_t>& cipher_text_with_tag ) {
+                                          const std::vector<uint8_t>& cipher_text_with_tag,
+                                          const EVP_CIPHER* cipher ) {
         
         size_t cipher_len = cipher_text_with_tag.size() - 16;
 
@@ -303,39 +304,7 @@ namespace ntk {
 
         EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
 
-        EVP_DecryptInit_ex( ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr );
-        EVP_CIPHER_CTX_ctrl( ctx, EVP_CTRL_GCM_SET_IVLEN, nonce.size(), nullptr );
-        EVP_DecryptInit_ex( ctx, nullptr, nullptr, key.data(), nonce.data() );
-
-        int len = 0;
-        EVP_DecryptUpdate( ctx, nullptr, &len, aad.data(), aad.size() );
-        EVP_DecryptUpdate( ctx, plain_text.data(), &len, cipher_text, cipher_len );
-        EVP_CIPHER_CTX_ctrl( ctx, EVP_CTRL_GCM_SET_TAG, 16, ( void* )tag );
-
-        if ( EVP_DecryptFinal_ex( ctx, plain_text.data() + len, &len) <= 0 ) {
-            EVP_CIPHER_CTX_free( ctx );
-            throw std::runtime_error( "GCM decryption failed ( tag mismatch )" );
-        }
-
-        EVP_CIPHER_CTX_free( ctx );
-        return plain_text;
-    }
-
-    std::vector<uint8_t> decrypt_aes_gcm_( const std::vector<uint8_t>& key,
-                                           const std::vector<uint8_t>& nonce,
-                                           const std::vector<uint8_t>& aad,
-                                           const std::vector<uint8_t>& cipher_text_with_tag ) {
-        
-        size_t cipher_len = cipher_text_with_tag.size() - 16;
-
-        const uint8_t* tag = &cipher_text_with_tag[ cipher_len ];
-        const uint8_t* cipher_text = &cipher_text_with_tag[ 0 ];
-    
-        std::vector<uint8_t> plain_text( cipher_len );
-
-        EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-
-        EVP_DecryptInit_ex( ctx, EVP_aes_128_gcm(), nullptr, nullptr, nullptr );
+        EVP_DecryptInit_ex( ctx, cipher, nullptr, nullptr, nullptr );
         EVP_CIPHER_CTX_ctrl( ctx, EVP_CTRL_GCM_SET_IVLEN, nonce.size(), nullptr );
         EVP_DecryptInit_ex( ctx, nullptr, nullptr, key.data(), nonce.data() );
 
@@ -366,47 +335,34 @@ namespace ntk {
     std::vector<tls_record> decrypt_tls_data( const std::array<uint8_t,32>& client_random,
                                               const std::array<uint8_t,32>& server_random,
                                               const uint16_t tls_version,
-                                              const uint16_t cipher_suite,
+                                              const uint16_t cipher_suite_id,
                                               const std::vector<tls_record>& encrypted_records,
                                               const secrets& session_keys,
                                               const std::string& secret_label ) {
 
-        auto secret = get_traffic_secret( session_keys, client_random, secret_label );
+        const cipher_suite suite = static_cast<cipher_suite>( cipher_suite_id );
 
-        auto key_material = derive_tls_key_iv( secret, EVP_sha384(), 32, 12 );
+        const EVP_MD* hash_fn = nullptr;
+        const EVP_CIPHER* cipher = nullptr;
+        size_t key_len = 0;
 
-        std::vector<tls_record> result;
-        uint64_t seq_num = 0;
-
-        for ( const auto& record : encrypted_records ) {
-
-            if ( record.content_type != tls_content_type::APPLICATION_DATA ) {
-                result.push_back( record );
-                continue;
-            }
-
-            auto nonce = build_tls13_nonce( key_material.iv, seq_num );
-            auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
-            auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload );
-
-            result.push_back( { record.content_type, record.version, decrypted_payload } );
-            seq_num++;
+        switch ( suite ) {
+            case cipher_suite::TLS_AES_128_GCM_SHA256:
+                hash_fn = EVP_sha256();
+                cipher = EVP_aes_128_gcm();
+                key_len = 16;
+                break;
+            case cipher_suite::TLS_AES_256_GCM_SHA384:
+                hash_fn = EVP_sha384();
+                cipher = EVP_aes_256_gcm();
+                key_len = 32;
+                break;
+            default:
+                throw std::runtime_error( "Unsupported cipher suite" );
         }
 
-        return result;
-    }
-
-    std::vector<tls_record> decrypt_tls_data_( const std::array<uint8_t,32>& client_random,
-                                               const std::array<uint8_t,32>& server_random,
-                                               const uint16_t tls_version,
-                                               const uint16_t cipher_suite,
-                                               const std::vector<tls_record>& encrypted_records,
-                                               const secrets& session_keys,
-                                               const std::string& secret_label ) {
-
         auto secret = get_traffic_secret( session_keys, client_random, secret_label );
-
-        auto key_material = derive_tls_key_iv( secret, EVP_sha256(), 32, 12 );
+        auto key_material = derive_tls_key_iv( secret, hash_fn, key_len, 12 );
 
         std::vector<tls_record> result;
         uint64_t seq_num = 0;
@@ -420,7 +376,7 @@ namespace ntk {
 
             auto nonce = build_tls13_nonce( key_material.iv, seq_num );
             auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
-            auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload );
+            auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload, cipher );
 
             result.push_back( { record.content_type, record.version, decrypted_payload } );
             seq_num++;
@@ -432,40 +388,38 @@ namespace ntk {
     tls_record decrypt_record( const std::array<uint8_t,32>& client_random,
                                const std::array<uint8_t,32>& server_random,
                                const uint16_t tls_version,
-                               const uint16_t cipher_suite,
+                               const uint16_t cipher_suite_id,
                                const tls_record& record,
                                const secrets& session_keys,
                                const std::string& secret_label,
                                uint64_t seq_num ) {
 
-        auto secret = get_traffic_secret( session_keys, client_random, secret_label );
-        auto key_material = derive_tls_key_iv( secret, EVP_sha384(), 32, 12 );
-        auto nonce = build_tls13_nonce( key_material.iv, seq_num );
-        auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
-        auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload );
+        const cipher_suite suite = static_cast<cipher_suite>( cipher_suite_id );
 
-        tls_record result { 
-            record.content_type, 
-            record.version, 
-            decrypted_payload };
+        const EVP_MD* hash_fn = nullptr;
+        const EVP_CIPHER* cipher = nullptr;
+        size_t key_len = 0;
 
-        return result;
-    }
-
-    tls_record decrypt_record_( const std::array<uint8_t,32>& client_random,
-                                const std::array<uint8_t,32>& server_random,
-                                const uint16_t tls_version,
-                                const uint16_t cipher_suite,
-                                const tls_record& record,
-                                const secrets& session_keys,
-                                const std::string& secret_label,
-                                uint64_t seq_num ) {
+        switch ( suite ) {
+            case cipher_suite::TLS_AES_128_GCM_SHA256:
+                hash_fn = EVP_sha256();
+                cipher = EVP_aes_128_gcm();
+                key_len = 16;
+                break;
+            case cipher_suite::TLS_AES_256_GCM_SHA384:
+                hash_fn = EVP_sha384();
+                cipher = EVP_aes_256_gcm();
+                key_len = 32;
+                break;
+            default:
+                throw std::runtime_error( "Unsupported cipher suite" );
+        }
 
         auto secret = get_traffic_secret( session_keys, client_random, secret_label );
-        auto key_material = derive_tls_key_iv( secret, EVP_sha256(), 16, 12 );
+        auto key_material = derive_tls_key_iv( secret, hash_fn, key_len, 12 );
         auto nonce = build_tls13_nonce( key_material.iv, seq_num );
         auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
-        auto decrypted_payload = decrypt_aes_gcm_( key_material.key, nonce, aad, record.payload );
+        auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload, cipher );
 
         tls_record result { 
             record.content_type, 
@@ -811,6 +765,31 @@ namespace ntk {
     const std::string& tls_live_stream::get_sni() const {
         return m_sni;
     }
+
+    bool tls_filter::operator()( const ntk::tcp_live_stream& stream ) {
+        return stream.traffic_contains( is_client_hello_v );
+    }
+
+    bool sni_filter::operator()( const ntk::tcp_live_stream& stream ) {
+
+        auto has_matching_sni = [&]( const std::vector<uint8_t> packet ) {
+            if ( is_client_hello_v( packet ) ) {
+                auto client_hello = get_client_hello_from_ethernet_frame( packet );
+                auto result = sni_contains( client_hello, m_sni );
+                if ( result.has_value() ) {
+                    return result.value(); 
+                } else {
+                    return false;
+                } 
+            }
+            return false;
+        };
+
+        return stream.traffic_contains( has_matching_sni );
+    }
+
+    sni_filter::sni_filter( const std::string& sni )
+        : m_sni( sni ) {}
 
     std::string string_to_hex( const std::vector<uint8_t>& data ) {
         return session_id_to_hex( data );
