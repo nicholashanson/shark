@@ -1,38 +1,83 @@
 #!/bin/bash
 
-# Ensure script stops on error
 set -e
 
-# Define current directory
+# Directories
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 SRC_DIR="$SCRIPT_DIR/../src"
 INCLUDE_DIR="$SCRIPT_DIR/../include"
-
 TEST_DIR="$SCRIPT_DIR/../tests"
+BUILD_DIR="$SCRIPT_DIR/../build"
+LIB_DIR="$SCRIPT_DIR/../lib"
 
-# Find all .cpp files in src
-SRC_FILES=$(find "$SRC_DIR" -name '*.cpp')
+# Executables in current directory
+MAIN_BIN="$SCRIPT_DIR/ntk"
+TEST_BIN="$SCRIPT_DIR/ntk_tests"
 
-# Find all .cpp files in tests
-TEST_FILES=$(find "$TEST_DIR" -name '*.cpp')
+# Clean option
+if [[ "$1" == "--clean" ]]; then
+    echo "Cleaning build artifacts..."
+    rm -rf "$BUILD_DIR"
+    rm -f "$MAIN_BIN" "$TEST_BIN"
+    echo "✅ Clean complete."
+    exit 0
+fi
 
-# Compile main application
-g++ -g -O0 -std=c++23 "$SCRIPT_DIR/main.cpp" \
-    $SRC_FILES \
-    -I"$SCRIPT_DIR/../include" -o shark \
-    -lpcap \
-    -lssl -lcrypto 
-    
-# Compile test application
-g++ -g -O0 -std=c++23 -fPIC \
-    $TEST_FILES \
-    $SRC_FILES \
-    `pkg-config --cflags --libs Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets` \
-    -I"$TEST_DIR" \
-    -I"$SCRIPT_DIR/../include" -L"$SCRIPT_DIR/../lib" \
-    -lgtest -lgtest_main \
-    -lssl -lcrypto \
-    -o shark_tests
+# Create build dirs
+mkdir -p "$BUILD_DIR/obj" "$BUILD_DIR/test_obj"
 
-echo "Build complete."
+# Compiler and flags
+CXX=g++
+CXXFLAGS="-g -O0 -std=c++23 -fPIC"
+INCLUDES="-I$INCLUDE_DIR -I$TEST_DIR"
+CFLAGS=$(pkg-config --cflags Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets || echo "")
+LIBS=$(pkg-config --libs Qt5Widgets Qt5Multimedia Qt5MultimediaWidgets || echo "")
+
+# Compile .cpp to .o if changed
+compile_objects() {
+    local src_dir="$1"
+    local obj_dir="$2"
+    local -n out_array=$3
+
+    while IFS= read -r -d '' cpp_file; do
+        rel_path="${cpp_file#$SCRIPT_DIR/../}"
+        safe_name="${rel_path//\//_}"
+        obj_file="$obj_dir/${safe_name%.cpp}.o"
+        
+        if [[ ! -f "$obj_file" || "$cpp_file" -nt "$obj_file" ]]; then
+            echo "Compiling $cpp_file -> $obj_file"
+            $CXX $CXXFLAGS $INCLUDES $CFLAGS -c "$cpp_file" -o "$obj_file"
+        fi
+        out_array+=("$obj_file")
+    done < <(find "$src_dir" -name '*.cpp' -print0)
+}
+
+# Compile source and test objects
+SRC_OBJS=()
+TEST_OBJS=()
+compile_objects "$SRC_DIR" "$BUILD_DIR/obj" SRC_OBJS
+compile_objects "$TEST_DIR" "$BUILD_DIR/test_obj" TEST_OBJS
+
+# Compile main.cpp
+MAIN_CPP="$SCRIPT_DIR/main.cpp"
+MAIN_OBJ="$BUILD_DIR/obj/main.o"
+if [[ ! -f "$MAIN_OBJ" || "$MAIN_CPP" -nt "$MAIN_OBJ" ]]; then
+    echo "Compiling $MAIN_CPP"
+    $CXX $CXXFLAGS $INCLUDES -c "$MAIN_CPP" -o "$MAIN_OBJ"
+fi
+
+# Link main binary
+echo "Linking main binary..."
+$CXX $CXXFLAGS "${SRC_OBJS[@]}" "$MAIN_OBJ" \
+    $INCLUDES -L"$LIB_DIR" \
+    -o "$MAIN_BIN" \
+    -lpcap -lssl -lcrypto -lcurl -lz
+
+# Link test binary
+echo "Linking test binary..."
+$CXX $CXXFLAGS "${SRC_OBJS[@]}" "${TEST_OBJS[@]}" \
+    $INCLUDES $CFLAGS -L"$LIB_DIR" \
+    -o "$TEST_BIN" \
+    -lgtest -lgtest_main -lpcap -lssl -lcrypto $LIBS -lcurl -lz
+
+echo "✅ Build complete. Run ./ntk or ./ntk_tests"
