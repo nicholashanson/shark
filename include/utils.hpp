@@ -12,6 +12,9 @@
 
 #include <constants.hpp>
 #include "tcp.hpp"
+#include "ipv4.hpp"
+#include "tls.hpp"
+#include "http.hpp"
 
 namespace ntk {
 
@@ -19,9 +22,6 @@ namespace ntk {
         read in a series of packets from a file that was made using packet-capture
     */
     session read_packets_from_file( const std::string& packet_data_file );
-
-    // TODO: check http rules on whitespace in headers
-    std::string trim( const std::string& str );
 
     inline void print_vector( const std::vector<uint8_t>& data ) {
         for ( auto byte : data ) {
@@ -48,7 +48,7 @@ namespace ntk {
     inline void print_tcp_stream_info(const std::map<uint32_t, std::vector<uint8_t>>& stream ) {
         for (const auto& [seq_num, data] : stream) {
             std::cout << "Seq: " << seq_num 
-                    << ", Size: " << data.size() << " bytes\n";
+                      << ", Size: " << data.size() << " bytes\n";
         }
     }
 
@@ -103,8 +103,32 @@ namespace ntk {
         return true;
     }
 
-    void print_tcp_header( const tcp_header& header );
+    void print_tcp_header( const tcp_header& header, std::ostream& os = std::cout ); 
 
-}
+    void print_four( const four_tuple& four, std::ostream& os = std::cout );
+
+    void print_client_hello( const client_hello& c_hello, std::ostream& os = std::cout );
+
+    void print_server_hello( const server_hello& s_hello, std::ostream& os = std::cout );
+
+    void output_stream_to_file( const std::string& filename, const tcp_live_stream& live_stream );
+
+    void print_tls_record( const tls_record& record );
+
+    void print_tls_secrets( const secrets& keys );
+
+    void print_tcp_header( const std::vector<uint8_t>& packet, std::ostream& os = std::cout );
+
+    std::string four_to_string( const four_tuple& four );
+
+    void output_packet( const std::vector<uint8_t> packet, std::ofstream& ofs );
+
+    void print_http_request( const http_request& request, std::ostream& os = std::cout ); 
+
+    void print_http_response( const http_response& response, std::ostream& os = std::cout );
+
+    void write_payload_to_file( const std::vector<uint8_t>& payload, const std::string& filename );
+
+} // namespace ntk
 
 #endif
