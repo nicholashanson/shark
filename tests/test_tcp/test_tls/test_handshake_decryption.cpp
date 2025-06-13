@@ -40,7 +40,7 @@ TEST( PacketParsingTests, TLSNonce ) {
     std::vector<uint8_t> expected_nonce = {
         0x00, 0x01, 0x02, 0x03,
         0x05, 0x07, 0x05, 0x03,
-        0x0D, 0x0F, 0x0D, 0x03
+        0x0d, 0x0f, 0x0d, 0x03
     };
 
     ASSERT_EQ( actual_nonce, expected_nonce );
@@ -73,7 +73,7 @@ TEST( PacketParsingTests, TLSDecryption ) {
     auto client_hello = ntk::parse_client_hello( client_hello_span );
 
     // parse server-hello
-    tls_record_span = std::span<const unsigned char>( first_records[ 0 ].payload );
+    tls_record_span = std::span<const unsigned char>( first_records[ 0 ].payload ).subspan( 4 );
     auto server_hello = ntk::parse_server_hello( tls_record_span );
 
     auto session_keys = ntk::get_tls_secrets( "tls_session_keys.log" );
@@ -144,10 +144,12 @@ TEST( PacketParsingTests, CertificateExtraction ) {
     auto client_hello = ntk::parse_client_hello( client_hello_span );
 
     // parse server-hello
-    tls_record_span = std::span<const unsigned char>( first_records[ 0 ].payload );
+    tls_record_span = std::span<const unsigned char>( first_records[ 0 ].payload ).subspan( 4 );
     auto server_hello = ntk::parse_server_hello( tls_record_span );
 
     auto session_keys = ntk::get_tls_secrets( "tls_session_keys.log" );
+
+    ntk::print_server_hello( server_hello );
 
     auto decrypted_records = ntk::decrypt_tls_data( client_hello.random, server_hello.random, server_hello.server_version, 
         server_hello.cipher_suite, second_records, session_keys );

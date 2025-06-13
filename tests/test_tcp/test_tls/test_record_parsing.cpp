@@ -118,4 +118,6 @@ TEST( PacketParsingTests, TLSHandshakeParsing ) {
         session_keys,
         "CLIENT_TRAFFIC_SECRET_0",
         0 );
+ 
+    ntk::print_vector( decrypted_record.payload );
 }

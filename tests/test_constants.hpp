@@ -12,7 +12,10 @@ namespace test {
         { "tiny_cross", packet_data_dir + "/tiny_cross.txt" },
         { "tls_handshake", packet_data_dir + "/tls_handshake.txt" },
         { "earth_cam_live_stream", packet_data_dir + "/earth_cam_live_stream.txt" },
-        { "earth_cam_video", packet_data_dir + "/earth_cam_video.txt" }
+        { "earth_cam_video", packet_data_dir + "/earth_cam_video.txt" },
+        { "earth_cam_static", packet_data_dir + "/static_earth_cam.txt" },
+        { "short_stream", packet_data_dir + "/192.168.0.21_48662_204.107.64.57_443.txt" },
+        { "long_stream", packet_data_dir + "/192.168.0.21_48658_204.107.64.57_443.txt" }
     };
 
     //inline const unsigned char http_partial_request[] = {}
