@@ -105,26 +105,3 @@ TEST( PacketParsingTests, TLSClientHelloEquivalence ) {
 
     ASSERT_EQ( client_hello_from_ethernet, client_hello_from_record );
 }
-
-TEST( PacketParsingTests, TLSSniList ) {
-    
-    auto packet_data = ntk::read_packets_from_file( test::packet_data_files[ "earth_cam_live_stream" ] );
-    ntk::tcp_live_stream_session live_stream_session;
-
-    for ( auto& packet : packet_data ) {
-
-        if ( ntk::is_client_hello_v( packet ) ) {
-            std::cout << ntk::get_sni( ntk::get_client_hello( packet ) ).value() << std::endl;
-        }
-    }
-
-    std::cout << "number of completed streams: " << live_stream_session.number_of_completed_transfers() << std::endl;
-
-    auto& live_streams = ntk::tcp_live_stream_session_friend_helper::live_streams( live_stream_session );
-
-    for ( auto& stream : live_streams ) {
-        if ( stream.traffic_contains( ntk::is_client_hello_v ) ) {
-            ntk::tls_live_stream live_strean( stream );
-        }
-    } 
-}
