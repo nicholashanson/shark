@@ -9,7 +9,7 @@
   <img src="main/pipeline.jpg" width="600">
 </p>
 
-Each stage has a specific role and is loosely couply, promoting testability and flexibility.
+Each stage has a specific role and is loosely coupled, promoting testability and flexibility.
 
 ## Packet Capture and Buffering
 The packet_listener and ring_buffer work together to prevent packet-loss when network traffic is high or processing time is long.
