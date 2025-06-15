@@ -28,6 +28,16 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
       - <code>m_device_name</code>, <code>m_filter_exp</code>: used to configure capture.<br>
     </td>
   </tr>
+  <tr>
+    <td>ring_buffer<T,N></td>
+    <td style="padding-left: 20px;">
+      <strong>Purpose:</strong><br>
+      Lock-free circular queue to buffer packets between threads.<br><br>
+      <strong>Design:</strong><br>
+      - Thread-safe via atomics.<br>
+      - Pushes and pops are non-blocking.<br>
+    </td>
+  </tr> 
 </table>
 
 <div style="display: flex; align-items: flex-start;">
@@ -44,14 +54,9 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
   </div>
 </div>
 
-### packet_listener
-<p align="center">
-  <img src="images/uml/packet_listener.jpg" width="300">
-</p>
-<strong>Purpose:</strong><br>Captures raw  packets from a network device using libpcap.<br><strong>Design:</strong><br>- Takes a callback that controls the transfer of packets to a buffer.<br>- Callback should be light-weight to prevent packet loss.<br><strong>Key Members:</strong><br>- <code>m_callback</code>: called with each incoming packet.<br>- m_device_name, m_filter_exp: used to configure capture.<br>
 
 ### ring_buffer<T,N>
-Purpose: lock-free circular queue to buffer packets between threads.
+Purpose: 
 
 Design:
 - Thread-safe via atomics.
