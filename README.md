@@ -1,3 +1,8 @@
+# Description
+
+- Reconstructs TCP session from captured network packets.
+- Extracts and decyprts TLS traffice.
+
 # Processing Pipeline
 
 <p align="center">
