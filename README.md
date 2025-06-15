@@ -16,7 +16,7 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
 
 <table>
   <tr>
-    <td><img src="images/uml/packet_listener.jpg" width="300"></td>
+    <td>packet_listener</td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Captures raw packets from a network device using libpcap.<br><br>
