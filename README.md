@@ -6,7 +6,7 @@
 
 Each stage has a specific role and is loosely couply, promoting testability and flexibility.
 
-### Packet Capture and Buffer
+### Packet Capture and Buffering
 The packet_listener and ring_buffer work together to prevent packet-loss when network traffic is high or processing time is long.
 
 ### packet_listener
