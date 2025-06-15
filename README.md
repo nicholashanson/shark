@@ -40,40 +40,39 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
   </tr> 
 </table>
 
-<div style="display: flex; align-items: flex-start;">
-  <img src="images/uml/packet_listener.jpg" width="300" style="margin-right: 20px;">
-  <div>
-    <strong>Purpose:</strong><br>
-    Captures raw packets from a network device using libpcap.<br><br>
-    <strong>Design:</strong><br>
-    - Takes a callback that controls the transfer of packets to a buffer.<br>
-    - Callback should be light-weight to prevent packet loss.<br><br>
-    <strong>Key Members:</strong><br>
-    - <code>m_callback</code>: called with each incoming packet.<br>
-    - <code>m_device_name</code>, <code>m_filter_exp</code>: used to configure capture.<br>
-  </div>
-</div>
+## TCP Session Reconstruction
+
+<table>
+  <tr>
+    <td>tcp_live_stream_session</td>
+    <td style="padding-left: 20px;">
+      <strong>Purpose:</strong><br>
+      Reconstructs TCP flows form incoming packets.<br><br>
+      <strong>Design:</strong><br>
+      - Mainatains a set of tcp_live_stream objects, indexed by four_tuple ( IP/Port pairs).<br>
+      - When a stream is marked complete, it's then offloaded to a queue.<br><br>
+      <strong>Inferface:</strong><br>
+      - Accepts packets through <code>feed()</code>.<br>
+      - Offloads complete streams to a <code>transfer_queue_interface<tcp_live_stream></code>.<br>
+    </td>
+  </tr>
+  <tr>
+    <td>tcp_live_stream</td>
+    <td style="padding-left: 20px;">
+      <strong>Purpose:</strong><br>
+      Models a single live TCP connection.<br><br>
+      <strong>Design:</strong><br>
+      - Accepts packets from a connection indicated by <code>m_four_tuple</code>.<br>
+      - Tries to detect a valid TCP handshake and TCP termination sequence.<br>
+      - Adds all packets between a valid handshake and termination sequence to <code>m_traffic</code>.<br>
+    </td>
+  </tr> 
+</table>
 
 
-### ring_buffer<T,N>
-Purpose: 
-
-Design:
-- Thread-safe via atomics.
-- Pushes and pops are non-blocking.
-
-### tcp_live_stream_session
-Purpose: Reconstructs TCP flows form incoming packets.
-
-Design:
-- Mainatains a set of tcp_live_stream objects, indexed by four_tuple ( IP/Port pairs).
-- When a stream is marked complete, it's offloaded to a queue.
-Inferface:
-- Accepts packets through feed().
-- Offloads complete streams to a transfer_queue_interface<tcp_live_stream>.
 
 ### tcp_live_stream
-Purpose: models a single live TCP connection.
+Purpose: Models a single live TCP connection.
 
 Design:
 - Accepts packets from a connection indicated by m_four_tuple.
