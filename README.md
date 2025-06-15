@@ -38,6 +38,7 @@ Inferface:
 
 ### tcp_live_stream
 Purpose: models a single live TCP connection.
+
 Design:
 - Accepts packets from a connection indicated by m_four_tuple.
 - Tries to detect a valid TCP handshake and TCP termination sequence.
