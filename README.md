@@ -47,7 +47,7 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
     <td>tcp_live_stream_session</td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
-      Reconstructs TCP flows form incoming packets.<br><br>
+      Reconstructs TCP sessions from incoming packets.<br><br>
       <strong>Design:</strong><br>
       - Mainatains a set of tcp_live_stream objects, indexed by four_tuple ( IP/Port pairs).<br>
       - When a stream is marked complete, it's then offloaded to a queue.<br><br>
