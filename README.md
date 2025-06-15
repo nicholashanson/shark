@@ -8,6 +8,7 @@ Each stage has a specific role and is loosely couply, promoting testability and 
 
 ### packet_listener
 Purpose: caputes raw packets from a network device using libpcap.
+
 Design:
 - Takes a callback that controls the transfer of packets to a buffer.
 - Callback should be light-weight to prevent packet loss.
