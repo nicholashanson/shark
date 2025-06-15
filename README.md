@@ -10,8 +10,7 @@ Each stage has a specific role and is loosely couply, promoting testability and 
 The packet_listener and ring_buffer work together to prevent packet-loss when network traffic is high or processing time is long.
 
 ### packet_listener
-Purpose: Captures raw packets from a network device using libpcap.<br>Design:
-- Takes a callback that controls the transfer of packets to a buffer.
+Purpose: Captures raw packets from a network device using libpcap.<br>Design:- Takes a callback that controls the transfer of packets to a buffer.
 - Callback should be light-weight to prevent packet loss.
 
 Key Members:
