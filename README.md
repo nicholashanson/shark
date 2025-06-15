@@ -3,7 +3,7 @@
 ## UML Diagram
 
 <p align="center">
-  <img src="main/pipeline.jpg" width="1200">
+  <img src="main/pipeline.jpg" width="600">
 </p>
 
 <p align="center">
