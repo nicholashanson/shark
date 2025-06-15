@@ -51,6 +51,10 @@ int main() {
 `   ring_buff.push( vec );
   };
 
+  auto stream_callback = [&]( ntk::tcp_live_stream&& live_stream ) {
+    ntk::out
+  };
+
   ntk::packet_listener listener( "wlo1", "tcp port 443" );
   listener.start( packet_callback);
 
