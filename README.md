@@ -15,12 +15,43 @@ Purpose: Captures raw packets from a network device using libpcap.
 Design:
 - Takes a callback that controls the transfer of packets to a buffer.
 - Callback should be light-weight to prevent packet loss.
+
+Key Members:
+- m_callback: called with each incoming packet.
+- m_device_name, m_filter_exp: used to configure capture.
 ### ring_buffer<T,N>
 Purpose: lock-free circular queue to buffer packets between threads.
 
 Design:
 - Thread-safe via atomics.
 - Pushes and pops are non-blocking.
+
+### tcp_live_stream_session
+Purpose: Reconstructs TCP flows form incoming packets.
+
+Design:
+- Mainatains a set of tcp_live_stream objects, indexed by four_tuple ( IP/Port pairs).
+- When a stream is marked complete, it's offloaded to a queue.
+Inferface:
+- Accepts packets through feed().
+- Offloads complete streams to a transfer_queue_interface<tcp_live_stream>.
+
+### tcp_live_stream
+Purpose: models a single live TCP connection.
+Design:
+- Accepts packets from a connection indicated by m_four_tuple.
+- Tries to detect a valid TCP handshake and TCP termination sequence.
+- Adds all intermediate packets to m_traffic.
+- Marks itself as complete when a valid TCP termination sequence is detected.
+
+### spmc_transfer_queue<T,Filter>
+Purpose: thread-safe queue with optional filtering for handing off completed streams.
+
+Design:
+- Implements transfer_queue_interface<T>
+- Supports an optional Filter template parameter that determines whether to accept an item.
+- Uses std::queue, std::mutex, and condition_variable to allow blocking or timed popping.
+
 
 ## UML Diagram
 
