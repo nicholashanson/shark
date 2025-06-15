@@ -11,12 +11,14 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
 
 ### packet_listener
 Purpose: Captures raw packets from a network device using libpcap.
+
 Design:
 - Takes a callback that controls the transfer of packets to a buffer.
 - Callback should be light-weight to prevent packet loss.
 ### ring_buffer<T,N>
 Purpose: lock-free circular queue to buffer packets between threads.
-Desing:
+
+Design:
 - Thread-safe via atomics.
 - Pushes and pops are non-blocking.
 
