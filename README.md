@@ -11,9 +11,12 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
 
 ### packet_listener
 <p align="center">
-  <img src="images/uml/packet_listener.jpg" width="200">
+  <img src="images/uml/packet_listener.jpg" width="400">
 </p>
-<strong>Purpose:</strong> Captures raw  packets from a network device using libpcap.<br><strong>Design:</strong><br>- Takes a callback that controls the transfer of packets to a buffer.<br>- Callback should be light-weight to prevent packet loss.<br><strong>Key Members:</strong><br>-```m_callback```: called with each incoming packet.
+<strong>Purpose:</strong> Captures raw  packets from a network device using libpcap.<br><strong>Design:</strong><br>- Takes a callback that controls the transfer of packets to a buffer.<br>- Callback should be light-weight to prevent packet loss.<br><strong>Key Members:</strong><br>-
+```cpp 
+m_callback
+```: called with each incoming packet.
 - m_device_name, m_filter_exp: used to configure capture.
 ### ring_buffer<T,N>
 Purpose: lock-free circular queue to buffer packets between threads.
