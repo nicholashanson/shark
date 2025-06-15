@@ -1,21 +1,22 @@
 # Processing Pipeline
 
-## UML Diagram
-
 <p align="center">
   <img src="main/pipeline.jpg" width="600">
 </p>
 
+Each stage has a specific role and is loosely couply, promoting testability and flexibility.
+
+### packet_listener
+Purpose: caputes raw packets from a network device using libpcap.
+Design:
+- Takes a callback that controls the transfer of packets to a buffer.
+- Callback should be light-weight to prevent packet loss.
+
+## UML Diagram
+
 <p align="center">
   <img src="main/processing_pipeline.jpg" width="1200">
 </p>
-
-## Packet Capture
-
-The packet_listener thread transfers pakcets captured by pcap from kernel-space to user-space.
-The packet_listener takes a callback that controls the transfer of packets to a buffer.
-The callback should be light-weight to prevent packet loss. Network traffic is not constant, 
-and buffering helps us ensure all packets are captured.
 
 ## Packet Buffering
 
