@@ -363,21 +363,17 @@ namespace ntk {
 
         auto secret = get_traffic_secret( session_keys, client_random, secret_label );
         auto key_material = derive_tls_key_iv( secret, hash_fn, key_len, 12 );
-
         std::vector<tls_record> result;
         uint64_t seq_num = 0;
 
         for ( const auto& record : encrypted_records ) {
-
             if ( record.content_type != tls_content_type::APPLICATION_DATA ) {
                 result.push_back( record );
                 continue;
             }
-
             auto nonce = build_tls13_nonce( key_material.iv, seq_num );
             auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
             auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload, cipher );
-
             result.push_back( { record.content_type, record.version, decrypted_payload } );
             seq_num++;
         }
@@ -421,10 +417,7 @@ namespace ntk {
         auto aad = build_tls13_aad( record.content_type, record.version, record.payload.size() );
         auto decrypted_payload = decrypt_aes_gcm( key_material.key, nonce, aad, record.payload, cipher );
 
-        tls_record result { 
-            record.content_type, 
-            record.version, 
-            decrypted_payload };
+        tls_record result { record.content_type, record.version, decrypted_payload };
 
         return result;
     }
@@ -565,10 +558,8 @@ namespace ntk {
     }
 
     bool secret_labels_are_equal( std::array<std::string,5> lhs, std::array<std::string,5> rhs ) {
-
         std::sort( lhs.begin(), lhs.end() );
         std::sort( rhs.begin(), rhs.end() );
-
         return lhs == rhs;
     }
 
@@ -635,10 +626,8 @@ namespace ntk {
     }
 
     std::expected<std::string,std::string> get_sni( const std::vector<uint8_t>& hello ) {
-
         auto client_hello = get_client_hello_from_ethernet_frame( hello );
         auto sni = get_sni( client_hello );
-        
         if ( !sni.has_value() ) {
             return std::unexpected( sni.error() );
         } else {
@@ -647,26 +636,18 @@ namespace ntk {
     }
 
     std::expected<bool,std::string> has_sni( const client_hello& hello, const std::string& host ) {
-
         auto result = get_sni( hello );
-
         if ( !result.has_value() ) {
             return std::unexpected( result.error() );  
         }
-
         return result.value() == host;
     }
 
     std::expected<bool,std::string> sni_contains( const client_hello& hello, const std::string& host ) {
-
         auto result = get_sni( hello );
-
         if ( !result.has_value() ) {
             return std::unexpected( result.error() );  
         }
-
-        std::cout << "detected sni: " << result.value() << std::endl;
-
         return result.value().contains( host );
     }
 
@@ -678,12 +659,9 @@ namespace ntk {
             auto client_hello = get_client_hello_from_ethernet_frame( client_hello_packet );
             auto result = get_sni( client_hello );
 
-            if ( result.has_value() ) std::cout << result.value() << std::endl;
-
             if ( !result.has_value() ) {
                 std::cerr << result.error() << std::endl;
             }
-
             if ( result && result->contains( host ) ) {
                 snis.push_back( *result );
             }
@@ -752,9 +730,7 @@ namespace ntk {
                 break;
             }
         }
-
         auto sni_result = ntk::get_sni( m_client_hello );
-
         if ( sni_result.has_value() ) {
             m_sni = sni_result.value();
         } else {
@@ -798,7 +774,6 @@ namespace ntk {
     tls_record_extraction_result extract_tls_records( const std::vector<std::vector<uint8_t>>& payloads ) {
 
         tls_record_extraction_result result;
-
         std::vector<uint8_t> remainder;
 
         for ( auto& payload : payloads ) {
@@ -822,7 +797,6 @@ namespace ntk {
     std::expected<tls_record,std::string> get_tls_record_from_ethernet( std::span<const uint8_t> packet ) {
 
         auto payload = extract_payload_from_ethernet( packet.data() );
-
         auto result = split_tls_records( payload );
 
         if ( result.has_value() ) {

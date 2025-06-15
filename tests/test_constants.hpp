@@ -414,7 +414,7 @@ namespace test {
         0x42, 0x8b, 0x4e, 0x1a, 0xce, 0xd9,                             // destination MAC address
         0x14, 0xf6, 0xd8, 0xaa, 0x69, 0xfa,                             // source MAC address
         0x08, 0x00,                                                     // ether-type ( 0x0800 = ipv4 )
-        /* IPv4 Header */                                               /* ipv4 header */
+        /* ipv4 Header */                                               /* ipv4 header */
         0x45,                                                           // version ( 4 ) and header-length ( 20 bytes )
         0x00,                                                           // type of service ( 0 )
         0x00, 0x34,                                                     // total-length ( 0x0034 = 52 bytes )
@@ -456,8 +456,8 @@ namespace test {
         0x40,                                                           // time-to-live
         0x11,                                                           // protocol
         0x00, 0x00,                                                     // header checksum
-        0xc0, 0xa8, 0x00, 0x15,                                         // source IP address
-        0xad, 0xc2, 0x03, 0x49,                                         // destination IP address
+        0xc0, 0xa8, 0x00, 0x15,                                         // source ip address
+        0xad, 0xc2, 0x03, 0x49,                                         // destination ip address
         /* udp header */                                                /* udp header */
         0x01, 0xbb,                                                     // source port
         0xce, 0xb9,                                                     // destination port

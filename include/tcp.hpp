@@ -166,8 +166,9 @@ namespace ntk {
     struct tcp_handshake_feed { 
 
         bool feed( const std::vector<uint8_t>& packet );
+    private:
         bool feed_packet( const std::vector<uint8_t>& packet ); 
-
+    public:
         void reset() {
             m_syn = m_syn_ack = m_ack = std::nullopt;
         }
@@ -185,10 +186,11 @@ namespace ntk {
     };
 
     struct tcp_termination_feed { 
-
+    
         bool feed( const std::vector<uint8_t>& packet );
+    private:
         bool feed_packet( const std::vector<uint8_t>& packet );
-
+    public:
         tcp_termination_feed( const four_tuple& four ) 
             : m_four( four ), m_fin_1_seq_number( std::numeric_limits<uint32_t>::max() ),
               m_fin_2_seq_number( std::numeric_limits<uint32_t>::max() ), m_complete( false ) {}

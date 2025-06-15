@@ -2,8 +2,9 @@
 
 namespace ntk {
 
-    stream_processor::stream_processor( transfer_queue_interface<tcp_live_stream>& queue ) 
-        : m_queue( queue ), m_stop( false ) {}
+    stream_processor::stream_processor( transfer_queue_interface<tcp_live_stream>& queue,
+                                        stream_callback callback ) 
+        : m_queue( queue ), m_stop( false ), m_callback( callback ) {}
 
     void stream_processor::start() {
         m_thread = std::thread( &stream_processor::run, this );
@@ -27,7 +28,7 @@ namespace ntk {
     }
 
     void stream_processor::process_stream( tcp_live_stream&& stream ) {
-        return; // TO BE IMPLEMENTED
+        m_callback( std::move( stream ) );
     }
 
 } // namespace ntk
