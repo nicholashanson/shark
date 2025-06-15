@@ -6,7 +6,7 @@
 
 Each stage has a specific role and is loosely couply, promoting testability and flexibility.
 
-### Packet Capture and Buffering
+## Packet Capture and Buffering
 The packet_listener and ring_buffer work together to prevent packet-loss when network traffic is high or processing time is long.
 
 ### packet_listener
@@ -57,24 +57,6 @@ Design:
 <p align="center">
   <img src="main/processing_pipeline.jpg" width="1200">
 </p>
-
-## Packet Buffering
-
-A ring-buffer is used for packet buffering. 
-
-
-## TCP Connection Detection
-
-### Handshake Detection
-
-### Termination Detection
-
-
-## Connection Filtering and Offloading
-
-The SPMC
-
-## Connection Processing
 
 ## Example Usage
 
