@@ -1,10 +1,15 @@
-# UML Diagram
+# Processing Pipeline
+
+## UML Diagram
+
+<p align="center">
+  <img src="main/pipeline.jpg" width="1200">
+</p>
 
 <p align="center">
   <img src="main/processing_pipeline.jpg" width="1200">
 </p>
 
-# Processing Pipeline
 ## Packet Capture
 
 The packet_listener thread transfers pakcets captured by pcap from kernel-space to user-space.
