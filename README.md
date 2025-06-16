@@ -44,7 +44,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
 
 <table>
   <tr>
-    <td>tcp_live_stream_session</td>
+    <td><code>tcp_live_stream_session</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Reconstructs TCP sessions from incoming packets.<br><br>
@@ -57,7 +57,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
     </td>
   </tr>
   <tr>
-    <td>tcp_live_stream</td>
+    <td><code>tcp_live_stream</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Models a single live TCP connection.<br><br>
@@ -74,7 +74,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
 
 <table>
   <tr>
-    <td><code>spmc_transfer_queue<T,Filter></code></td>
+    <td><code>spmc_transfer_queue&lt;T,Filter&gt;</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Thread-safe queue with optional filtering for handing off completed streams.<br><br>
@@ -85,7 +85,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
     </td>
   </tr>
   <tr>
-    <td>stream_processor</td>
+    <td><code>stream_processor</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Models a single live TCP connection.<br><br>
