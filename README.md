@@ -1,7 +1,7 @@
 # Description
 
 - Reconstructs TCP sessions from captured network packets.
-- Extracts and decyprts TLS traffice.
+- Extracts and decyprts TLS traffic.
 
 # TCP Session Reconstruction
 ## Processing Pipeline
