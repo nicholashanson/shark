@@ -202,6 +202,7 @@ int main() {
         record.payload.pop_back();                  // the last byte of the decrypted payload is not part of the HTTP body
     }
 
+    // skip over first two http responses
     ntk::http_response response = ntk::get_http_response(  decrypted_server_tls_records[ 2 ].payload  );
 
     for ( size_t i = 3; i < decrypted_server_tls_records.size(); ++i ) {
