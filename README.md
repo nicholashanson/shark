@@ -175,9 +175,9 @@ int main() {
   <img src="images/tls.jpg" width="600">
 </p>
 
-<figure style="text-align: center; margin: 1em 0;">
-  <img src="main/output.gif" width="600" style="display: block; margin: 0 auto;">
-  <figcaption style="color: #888; font-style: italic; font-size: 0.9em; margin-top: 0.5em;">
+<div align="center">
+  <img src="main/output.gif" width="600"><br>
+  <span style="color: #888; font-style: italic; font-size: 0.9em;">
     segment.ts
-  </figcaption>
-</figure>
+  </span>
+</div>
