@@ -175,6 +175,40 @@ int main() {
   <img src="images/tls.jpg" width="600">
 </p>
 
+```cpp
+    auto client_payloads = ntk::extract_payloads( four, packet_data );
+    auto server_payloads = ntk::extract_payloads( ntk::flip_four( four ), packet_data );
+
+    auto client_tls_records = ntk::extract_tls_records( client_payloads ).records;
+    auto server_tls_records = ntk::extract_tls_records( server_payloads ).records;
+
+    auto client_hello = ntk::get_client_hello( client_tls_records[ 0 ] );
+    auto server_hello = ntk::get_server_hello( server_tls_records[ 0 ] );
+
+    auto secrets = ntk::get_tls_secrets( "sslkeys.log", client_hello.random );
+
+    auto decrypted_server_tls_records = ntk::decrypt_tls_data(
+        client_hello.random,
+        server_hello.random,
+        server_hello.server_version,
+        server_hello.cipher_suite,
+        server_records_to_decrypt,
+        secrets,
+        "SERVER_TRAFFIC_SECRET_0" );
+
+    for ( auto& record : decrypted_server_tls_records ) {
+        record.payload.pop_back();
+    }
+
+    ntk::http_response response = ntk::get_http_response(  decrypted_server_tls_records[ 2 ].payload  );
+
+    for ( size_t i = 3; i < decrypted_server_tls_records.size(); ++i ) {
+        response.body.insert( response.body.end(), decrypted_server_tls_records[ i ].payload.begin(), decrypted_server_tls_records[ i ].payload.end() );
+    }
+
+    ntk::write_payload_to_file( response.body, "segment.ts" );
+```
+
 <div align="center">
   <img src="main/output.gif" width="600"><br>
   <em><sub>segment.ts</sub></em>
