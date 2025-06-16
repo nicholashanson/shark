@@ -72,7 +72,6 @@ namespace test {
         char** argv = nullptr;
         QApplication app( argc, argv );
 
-        // Write MP4 data to a temporary file
         QTemporaryFile temp_file( QDir::tempPath() + "/color.mp4" );
         temp_file.setAutoRemove( false );
         if ( !temp_file.open() ) {
@@ -89,7 +88,6 @@ namespace test {
         QString temp_file_path = temp_file.fileName();
         temp_file.close();
 
-        // Create media player and video widget
         QMediaPlayer* player = new QMediaPlayer;
         QVideoWidget* video_widget = new QVideoWidget;
 
@@ -97,7 +95,7 @@ namespace test {
         QVBoxLayout* layout = new QVBoxLayout;
         layout->addWidget( video_widget );
         window.setLayout(layout);
-        window.setWindowTitle("MP4 Viewer");
+        window.setWindowTitle( "MP4 Viewer" );
         window.resize(640, 480);
 
         player->setVideoOutput( video_widget );
@@ -106,18 +104,17 @@ namespace test {
 
         window.show();
 
-        // Automatically quit after video duration or fallback timer
         QObject::connect( player, &QMediaPlayer::mediaStatusChanged, [&]( QMediaPlayer::MediaStatus status ) {
             if ( status == QMediaPlayer::EndOfMedia || status == QMediaPlayer::InvalidMedia ) {
                 app.quit();
             }
         });
 
-        QTimer::singleShot( 30000, &app, &QApplication::quit ); // Fallback timeout
+        QTimer::singleShot( 30000, &app, &QApplication::quit ); 
 
         app.exec();
 
-        QFile::remove( temp_file_path ); // Clean up
+        QFile::remove( temp_file_path ); 
     }
 
 } // test
