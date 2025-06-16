@@ -12,11 +12,11 @@
 Each stage has a specific role and is loosely coupled, promoting testability and flexibility.
 
 ## Packet Capture and Buffering
-The packet_listener and ring_buffer work together to prevent packet-loss when network traffic is high or processing time is long.
+The <code>packet_listener</code> and <code>ring_buffer</code> work together to prevent packet-loss when network traffic is high or processing time is long.
 
 <table>
   <tr>
-    <td>packet_listener</td>
+    <td><code>packet_listener</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Captures raw packets from a network device using libpcap.<br><br>
@@ -73,7 +73,7 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
 
 <table>
   <tr>
-    <td><code>spmc_transfer_queu<T,Filter></code></td>
+    <td><code>spmc_transfer_queue<T,Filter></code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Thread-safe queue with optional filtering for handing off completed streams.<br><br>
