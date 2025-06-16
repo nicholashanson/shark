@@ -9,7 +9,12 @@
   <img src="main/pipeline.jpg" width="600">
 </p>
 
-Each stage has a specific role and is loosely coupled, promoting testability and flexibility.
+Each stage of the pipeline has a specific role and is loosely coupled, promoting testability and flexibility.
+
+The pipeline can be split into three main sections:
+- Packet capture and buffer
+- TCP session reconstruction
+- TCP session offloading and post-processing.
 
 ## Packet Capture and Buffering
 The <code>packet_listener</code> and <code>ring_buffer</code> work together to prevent packet-loss when network traffic is high or processing time is long.
