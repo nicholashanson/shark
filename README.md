@@ -88,11 +88,10 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
     <td><code>stream_processor</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
-      Models a single live TCP connection.<br><br>
+      Consumes completed TCP streams ( from the <code>spmc_transfer_queue</code> ) and process them using a user-supplied callback.<br><br>
       <strong>Design:</strong><br>
-      - Accepts packets from a connection indicated by <code>m_four_tuple</code>.<br>
-      - Tries to detect a valid TCP handshake and TCP termination sequence.<br>
-      - Adds all packets between a valid handshake and termination sequence to <code>m_traffic</code>.<br>
+      - Pulls <code>tcp_live_stream</code> objects from the queue using blocking or timed methods.<br>
+      - When a stream is retrieved, it calls <code>m_callback(stream)</code> — where m_callback is user-supplied.<br>
     </td>
   </tr> 
 </table>
