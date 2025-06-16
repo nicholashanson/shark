@@ -65,6 +65,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
       - Accepts packets from a connection indicated by <code>m_four_tuple</code>.<br>
       - Tries to detect a valid TCP handshake and TCP termination sequence.<br>
       - Adds all packets between a valid handshake and termination sequence to <code>m_traffic</code>.<br>
+      - Marks itself as complete when a valid TCP termination is detected.<br>
     </td>
   </tr> 
 </table>
