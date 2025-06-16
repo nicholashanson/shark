@@ -177,7 +177,5 @@ int main() {
 
 <div align="center">
   <img src="main/output.gif" width="600"><br>
-  <span style="color: #888; font-style: italic; font-size: 0.9em;">
-    segment.ts
-  </span>
+  <em><sub>segment.ts</sub></em>
 </div>
