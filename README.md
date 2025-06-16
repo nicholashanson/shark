@@ -3,6 +3,21 @@
 - Reconstructs TCP sessions from captured network packets.
 - Extracts and decyprts TLS traffic.
 
+# Build and Run Tests
+
+Clone the directory, cd to main and set-up GoogleTest:
+```
+./setup_googletest.sh
+```
+Then build:
+```
+./build.sh
+```
+Then run the test executable:
+```
+sudo ./ntk_tests
+```
+
 # TCP Session Reconstruction
 ## Processing Pipeline
 
