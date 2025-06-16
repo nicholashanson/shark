@@ -176,6 +176,7 @@ int main() {
 </p>
 
 ```cpp
+    // four: ( client_ip, server_ip, client_port, server_port )
     auto client_payloads = ntk::extract_payloads( four, packet_data );
     auto server_payloads = ntk::extract_payloads( ntk::flip_four( four ), packet_data );
 
@@ -185,19 +186,20 @@ int main() {
     auto client_hello = ntk::get_client_hello( client_tls_records[ 0 ] );
     auto server_hello = ntk::get_server_hello( server_tls_records[ 0 ] );
 
+    // session keys in "sslkey.log" are indexed with the client random
     auto secrets = ntk::get_tls_secrets( "sslkeys.log", client_hello.random );
 
     auto decrypted_server_tls_records = ntk::decrypt_tls_data(
         client_hello.random,
         server_hello.random,
-        server_hello.server_version,
-        server_hello.cipher_suite,
-        server_records_to_decrypt,
-        secrets,
-        "SERVER_TRAFFIC_SECRET_0" );
+        server_hello.server_version,                // TLS version used in the session
+        server_hello.cipher_suite,                  // this is used so OpenSSL can choose the correct cipher
+        server_records_to_decrypt,                  // encrypted TLS records
+        secrets,                                    // a map containing the session keys
+        "SERVER_TRAFFIC_SECRET_0" );                // the label for the session-key needed for decrypting server->client traffic
 
     for ( auto& record : decrypted_server_tls_records ) {
-        record.payload.pop_back();
+        record.payload.pop_back();                  // the last byte of the decrypted payload is not part of the HTTP body
     }
 
     ntk::http_response response = ntk::get_http_response(  decrypted_server_tls_records[ 2 ].payload  );
