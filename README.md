@@ -182,8 +182,8 @@ The diagram below shows how <code>ntk</code> can be used to decrypt and extract 
 3. Inside **`ntk`**, the following components are used:
    - **TCP session reconstruction**: Reassembles TCP streams from raw packets.
    - **TLS record parsing**: Extracts encrypted TLS records and metadata (e.g., `client_random`).
-   - **SSL key extraction**: Retrieves session keys from `sslkeys.log`.
-4. **OpenSSL** uses the session secrets and TLS records to decrypt the traffic.
+   - **SSL key extraction**: Useses `clinet_random` to extract the necessary session keys from `sslkeys.log`.
+4. **OpenSSL** uses the session secrets and the metadata extracted from the handshake to decrypt the TLS records.
 5. **HTTP payload extraction** pulls the decrypted content from the TLS records.
 6. The resulting data (e.g., `.ts` video segments) is saved to disk.
 
