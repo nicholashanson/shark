@@ -91,7 +91,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
       Consumes completed TCP streams ( from the <code>spmc_transfer_queue</code> ) and process them using a user-supplied callback.<br><br>
       <strong>Design:</strong><br>
       - Pulls <code>tcp_live_stream</code> objects from the queue using blocking or timed methods.<br>
-      - When a stream is retrieved, it calls <code>m_callback(stream)</code> — where m_callback is user-supplied.<br>
+      - When a stream is retrieved, it calls <code>m_callback(stream)</code> — where <code>m_callback</code> is user-supplied.<br>
     </td>
   </tr> 
 </table>
