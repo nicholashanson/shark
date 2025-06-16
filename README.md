@@ -20,10 +20,19 @@ sudo ./ntk_tests
 
 # TCP Session Reconstruction
 ## Processing Pipeline
-
+<!--
 <p align="center">
   <img src="main/pipeline.jpg" width="600">
 </p>
+-->
+
+<div align="center">
+  <picture>
+    <source srcset="main/pipeline.jpg" media="(prefers-color-scheme: dark)">
+    <source srcset="images/pipeline_.jpg" media="(prefers-color-scheme: light)">
+    <img src="images/pipeline_.jpg" width="600">
+  </picture>
+</div>
 
 Each stage of the pipeline has a specific role and is loosely coupled, promoting testability and flexibility.
 
