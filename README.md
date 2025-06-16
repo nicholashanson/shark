@@ -49,7 +49,7 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
       <strong>Purpose:</strong><br>
       Reconstructs TCP sessions from incoming packets.<br><br>
       <strong>Design:</strong><br>
-      - Mainatains a set of tcp_live_stream objects, indexed by four_tuple ( IP/Port pairs).<br>
+      - Mainatains a set of <code>tcp_live_stream</code> objects, indexed by <code>four_tuple</code> ( IP/Port pairs).<br>
       - When a stream is marked complete, it's then offloaded to a queue.<br><br>
       <strong>Inferface:</strong><br>
       - Accepts packets through <code>feed()</code>.<br>
@@ -69,25 +69,32 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
   </tr> 
 </table>
 
+## TCP Session Offloading and Post-Processing
 
-
-### tcp_live_stream
-Purpose: Models a single live TCP connection.
-
-Design:
-- Accepts packets from a connection indicated by m_four_tuple.
-- Tries to detect a valid TCP handshake and TCP termination sequence.
-- Adds all intermediate packets to m_traffic.
-- Marks itself as complete when a valid TCP termination sequence is detected.
-
-### spmc_transfer_queue<T,Filter>
-Purpose: thread-safe queue with optional filtering for handing off completed streams.
-
-Design:
-- Implements transfer_queue_interface<T>
-- Supports an optional Filter template parameter that determines whether to accept an item.
-- Uses std::queue, std::mutex, and condition_variable to allow blocking or timed popping.
-
+<table>
+  <tr>
+    <td>tcp_live_stream_session</td>
+    <td style="padding-left: 20px;">
+      <strong>Purpose:</strong><br>
+      Thread-safe queue with optional filtering for handing off completed streams.<br><br>
+      <strong>Design:</strong><br>
+      - Implements <code>transfer_queue_interface<T></code>.<br>
+      - Supports an optional <code>Filter</code> template parameter that determines whether to accept an item.<br>
+      - Uses <code>std::queue</code>, <code>std::mutex</code>, and <code>condition_variable</code> to allow blocking or timed popping.<br><br>
+    </td>
+  </tr>
+  <tr>
+    <td>stream_processor</td>
+    <td style="padding-left: 20px;">
+      <strong>Purpose:</strong><br>
+      Models a single live TCP connection.<br><br>
+      <strong>Design:</strong><br>
+      - Accepts packets from a connection indicated by <code>m_four_tuple</code>.<br>
+      - Tries to detect a valid TCP handshake and TCP termination sequence.<br>
+      - Adds all packets between a valid handshake and termination sequence to <code>m_traffic</code>.<br>
+    </td>
+  </tr> 
+</table>
 
 ## UML Diagram
 
