@@ -29,7 +29,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
     </td>
   </tr>
   <tr>
-    <td><code>ring_buffer &lt;T,N &lt;</code></td>
+    <td><code>ring_buffer&lt;T,N&gt;</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Lock-free circular queue to buffer packets between threads.<br><br>
