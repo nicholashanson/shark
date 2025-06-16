@@ -175,6 +175,7 @@ int main() {
   <img src="images/tls.jpg" width="600">
 </p>
 
-<p align="center">
+<figure style="text-align: center;">
   <img src="main/output.gif" width="600">
-</p>
+  <figcaption>segment.ts</figcaption>
+</figure>
