@@ -113,7 +113,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
 
 ## Example Usage
 
-Here is an example of the above pipeline that captures HTTPS and write the reconstructued TCP streams to file:
+Here is an example of the above pipeline that captures HTTPS and writes the reconstructued TCP streams to file:
 
 ```cpp
 #include <packet_listener.hpp>
