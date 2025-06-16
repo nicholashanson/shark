@@ -177,6 +177,16 @@ The diagram below shows how <code>ntk</code> can be used to decrypt and extract 
   <img src="images/tls.jpg" width="600">
 </p>
 
+1) Firefox captures network traffic and logs SSL session keys to sslkeys.log.
+2) Traffic is intercepted using pcap, feeding raw packets into the ntk processing stack.
+3) Within ntk:
+- TCP session reconstruction reassembles TCP segments.
+- TLS record parsing extracts encrypted TLS records and metadata ( e.g., client random ).
+- SSL key extraction retrieves necessary keys from sslkeys.log.
+4) OpenSSL uses session secrets and TLS records to decrypt the traffic.
+5) HTTP payloads are extracted from the decrypted TLS records.
+6) Final content (e.g., video segments) is saved to disk.
+
 ```cpp
     // four: ( client_ip, server_ip, client_port, server_port )
     auto client_payloads = ntk::extract_payloads( four, packet_data );
