@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <atomic>
+#include <functional>
 
 #include <tcp.hpp>
 #include <spmc_queue.hpp>

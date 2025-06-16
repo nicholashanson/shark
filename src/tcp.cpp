@@ -437,14 +437,9 @@ namespace ntk {
     
             auto packet_tcp_header = get_tcp_header( packet.data() );
 
-            if ( is_fin_ack( packet_tcp_header ) ) {
-                std::cout << "seq: " << packet_tcp_header.sequence_number << std::endl;
-            }
-
             if ( !fin_1 && is_fin_ack( packet_tcp_header ) ) {
                 fin_1 = packet;
                 fin_1_seq_number = packet_tcp_header.sequence_number;
-                std::cout << "fin_1_seq_number: " << fin_1_seq_number << std::endl;
                 continue;
             }
 
@@ -455,7 +450,6 @@ namespace ntk {
                 
                 if ( packet_tcp_header.acknowledgment_number == fin_1_seq_number + 1 ) {
                     ack_1 = packet;
-                    std::cout << "ack_1 set by piggyback on fin_2 packet" << std::endl;
                 }
                 continue;
             }
@@ -464,7 +458,6 @@ namespace ntk {
                 if ( is_ack( packet_tcp_header ) &&
                      packet_tcp_header.acknowledgment_number == fin_1_seq_number + 1 ) {
                     ack_1 = packet;
-                    std::cout << "ack 1 set" << std::endl;
                     continue;
                 }
             }
@@ -614,45 +607,27 @@ namespace ntk {
         auto handshake_ack_ptr = get_end_of_handshake( packet_data, m_four, m_handshake );
         handshake_ack_ptr++;
 
-        std::cout << "got handshake" << std::endl;
-
         auto termination_ptr = get_start_of_termination( packet_data, m_four, m_termination );
 
-        std::cout << "got termination" << std::endl;
-
         auto size = static_cast<size_t>( termination_ptr - handshake_ack_ptr );
-
-        std::cout << "span size: " << size << std::endl;
 
         auto packet_span = std::span{ handshake_ack_ptr, size };
 
         for ( auto& packet : packet_span ) {
-            
             if ( is_data_packet( packet ) && get_four_from_ethernet( packet ) == m_four ) {
                 m_client_traffic.push_back( packet );
-
-                std::cout << "adding traffic" << std::endl;
                 continue;
             }
-
             if ( is_data_packet( packet ) && get_four_from_ethernet( packet ) == flip_four( m_four ) ) {
                 m_server_traffic.push_back( packet );
-
-                std::cout << "adding traffic" << std::endl;
                 continue;
             }
-
             if ( is_ack( packet ) && get_four_from_ethernet( packet ) == m_four ) {
                 m_client_acks.push_back( packet );
-
-                std::cout << "adding ack" << std::endl;
                 continue;
             }
-
             if ( is_ack( packet ) && get_four_from_ethernet( packet ) == flip_four( m_four ) ) {
                 m_server_acks.push_back( packet );
-
-                std::cout << "adding ack" << std::endl;
                 continue;
             }
         }
@@ -725,7 +700,7 @@ namespace ntk {
         ipv4_header packet_ip_header = get_ipv4_header( packet );
 
         return four_tuple {
-            .client_ip = packet_ip_header.source_ip_addr,
+            .client_ip = packet_ip_header.source_ip_addr,       // Write MP4 data to a temporary file
             .server_ip = packet_ip_header.destination_ip_addr,
             .client_port = packet_tcp_header.source_port,
             .server_port = packet_tcp_header.destination_port
@@ -770,24 +745,18 @@ namespace ntk {
         if ( is_syn( packet ) ) {
             reset();
             m_syn = packet;
-
-            std::cout << "syn detected" << std::endl;
             return true;
         }
 
         if ( m_syn && !m_syn_ack && is_syn_ack( packet ) &&
              packet_tcp_header.acknowledgment_number == get_tcp_header( m_syn.value().data() ).sequence_number + 1 ) {
             m_syn_ack = packet;
-
-            std::cout << "syn_ack detected" << std::endl;
             return true;
         }
 
         if ( m_syn_ack && is_ack( packet ) &&
              packet_tcp_header.acknowledgment_number == get_tcp_header( m_syn_ack.value().data() ).sequence_number + 1 )  {
             m_ack = packet;
-
-            std::cout << "ack detected" << std::endl;
             return true;
         }
 
@@ -807,7 +776,6 @@ namespace ntk {
                 .ack = *m_ack
             };
             m_complete = true;
-            std::cout << "handshake detected" << std::endl;
         }
 
         return true;
@@ -824,7 +792,6 @@ namespace ntk {
         if ( !m_fin_1 && is_fin_ack( packet_tcp_header ) ) {
             m_fin_1 = packet;
             m_fin_1_seq_number = packet_tcp_header.sequence_number;
-            std::cout << "fin_1_seq_number: " << m_fin_1_seq_number << std::endl;
             return true;
         }
 
@@ -832,12 +799,9 @@ namespace ntk {
             if ( packet_tcp_header.sequence_number == m_fin_1_seq_number ) return false;
             m_fin_2 = packet;
             m_fin_2_seq_number = packet_tcp_header.sequence_number;
-
-            std::cout << "fin_2_seq_number: " << m_fin_2_seq_number << std::endl;
             
             if ( packet_tcp_header.acknowledgment_number == m_fin_1_seq_number + 1 ) {
                 m_ack_1 = packet;
-                std::cout << "ack_1 set by piggyback on fin_2 packet" << std::endl;
             }
             return true;
         }
@@ -846,7 +810,6 @@ namespace ntk {
             if ( is_ack( packet_tcp_header ) &&
                  packet_tcp_header.acknowledgment_number == m_fin_1_seq_number + 1 ) {
                 m_ack_1 = packet;
-                std::cout << "ack 1 set" << std::endl;
                 return true;
             }
         }
@@ -854,8 +817,6 @@ namespace ntk {
         if ( m_fin_2 && !m_ack_2 && is_ack( packet_tcp_header ) ) {
             if ( packet_tcp_header.acknowledgment_number == m_fin_2_seq_number + 1 ) {
                 m_ack_2 = packet;
-
-                std::cout << "ack 2 set" << std::endl;
                 return true;
             }
         }
@@ -871,7 +832,6 @@ namespace ntk {
         
         if ( m_fin_1 && m_ack_1 && m_fin_2 && m_ack_2 ) {
             m_termination.closing_sequence = fin_ack_fin_ack{ *m_fin_1, *m_ack_1, *m_fin_2, *m_ack_2 };
-            std::cout << "termination detected" << std::endl;
             m_complete = true;
         }
 
