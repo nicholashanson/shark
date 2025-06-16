@@ -189,10 +189,11 @@ int main() {
 # HTTPS Decryption and Extraction
 
 The diagram below shows how <code>ntk</code> can be used to decrypt and extract HTTPS traffic.
-
+<!--
 <p align="center">
   <img src="images/tls.jpg" width="600">
 </p>
+-->
 
 <div align="center">
   <picture>
