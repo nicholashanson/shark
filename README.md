@@ -3,7 +3,8 @@
 - Reconstructs TCP sessions from captured network packets.
 - Extracts and decyprts TLS traffice.
 
-# Processing Pipeline
+# TCP Session Reconstruction
+## Processing Pipeline
 
 <p align="center">
   <img src="main/pipeline.jpg" width="600">
@@ -16,7 +17,7 @@ The pipeline can be split into three main sections:
 - TCP session reconstruction
 - TCP session offloading and post-processing.
 
-## Packet Capture and Buffering
+### Packet Capture and Buffering
 The <code>packet_listener</code> and <code>ring_buffer</code> work together to prevent packet-loss when network traffic is high or processing time is long.
 
 <table>
@@ -48,7 +49,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
   </tr> 
 </table>
 
-## TCP Session Reconstruction
+### TCP Session Reconstruction
 
 <table>
   <tr>
@@ -78,7 +79,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
   </tr> 
 </table>
 
-## TCP Session Offloading and Post-Processing
+### TCP Session Offloading and Post-Processing
 
 <table>
   <tr>
