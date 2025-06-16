@@ -43,10 +43,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
       Captures raw packets from a network device using libpcap.<br><br>
       <strong>Design:</strong><br>
       - Takes a callback that controls the transfer of packets to a buffer.<br>
-      - Callback should be light-weight to prevent packet loss.<br><br>    std::vector<uint8_t> pkt;
-    if (ring_buff.pop(pkt)) {  // or ring_buff.try_pop(pkt) depending on your API
-        live_stream_session.process_packet(pkt);
-    }
+      - Callback should be light-weight to prevent packet loss.<br><br>  
       <strong>Key Members:</strong><br>
       - <code>m_callback</code>: called with each incoming packet.<br>
       - <code>m_device_name</code>, <code>m_filter_exp</code>: used to configure capture.<br>
