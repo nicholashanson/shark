@@ -125,7 +125,7 @@ int main() {
 
   ntk::tcp_live_stream_session live_stream_session;
 
-  ntk::tls_filter filter;
+  ntk::tls_filter filter; // Filter example: only accept TLS traffic
   ntk::spmc_transfer_queue<ntk::tcp_live_stream,ntk::tls_filter> offload_queue( filter );
   ntk::tcp_live_stream_session live_stream_session( &offload_queue );
 
