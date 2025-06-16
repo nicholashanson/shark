@@ -12,7 +12,7 @@
 Each stage of the pipeline has a specific role and is loosely coupled, promoting testability and flexibility.
 
 The pipeline can be split into three main sections:
-- Packet capture and buffer
+- Packet capture and buffering.
 - TCP session reconstruction
 - TCP session offloading and post-processing.
 
