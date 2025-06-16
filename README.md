@@ -100,7 +100,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
 ## UML Diagram
 
 <p align="center">
-  <img src="main/processing_pipeline.jpg" width="1200">
+  <img src="images/processing_pipeline.jpg" width="1200">
 </p>
 
 ## Example Usage
