@@ -111,6 +111,16 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
 #include <spmc_queue.hpp>
 #include <stream_processor.hpp>
 
+std::string timestamp_filename() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    
+    std::tm tm = *std::localtime( &now_c );
+    std::ostringstream oss;
+    oss << std::put_time( &tm, "%Y-%m-%d_%H-%M-%S" ) << ".txt";
+    return oss.str();
+}
+
 int main() {
 
   using packet = std::vector<uint8_t>;
@@ -124,7 +134,8 @@ int main() {
   };
 
   auto stream_callback = [&]( ntk::tcp_live_stream&& live_stream ) {
-    ntk::out
+    std::string filename = timestamp_filename();
+    ntk::output_stream_to_file( filename, live_stream );
   };
 
   ntk::packet_listener listener( "wlo1", "tcp port 443" );
@@ -134,7 +145,17 @@ int main() {
   ntk::spmc_transfer_queue<ntk::tcp_live_stream,ntk::tls_filter> offload_queue( filter );
   ntk::tcp_live_stream_session live_stream_session( &offload_queue );
 
-  
+  ntk::stream_processor processor( &offload_queue, stream_callback );
+
+  listener.start();
+  processor.start();
+
+  while ( true ) {
+    std::vector<uint8_t> packet;
+    if ( ring_buff.pop( packet ) ) {  
+        live_stream_session.feed( packet );
+    }
+  }
 
   return 0;
 }
