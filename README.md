@@ -73,7 +73,7 @@ The packet_listener and ring_buffer work together to prevent packet-loss when ne
 
 <table>
   <tr>
-    <td>tcp_live_stream_session</td>
+    <td>spmc_transfer_queu<T,Filter></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
       Thread-safe queue with optional filtering for handing off completed streams.<br><br>
