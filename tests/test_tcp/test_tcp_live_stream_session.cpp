@@ -275,7 +275,7 @@ TEST( PacketParsingTests, TCPLiveStreamSessionEquivalence ) {
     } 
 }
 
-TEST( TCPLiveStreamSession, OffloadQueueTest ) {
+TEST( TCPLiveStreamSession, OffloadQueue ) {
 
     ntk::spmc_transfer_queue<ntk::tcp_live_stream> offload_queue;
     ntk::tcp_live_stream_session live_stream_session( &offload_queue ); 
