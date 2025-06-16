@@ -194,6 +194,12 @@ The diagram below shows how <code>ntk</code> can be used to decrypt and extract 
   <img src="images/tls.jpg" width="600">
 </p>
 
+<picture>
+  <source srcset="images/tls.jpg" media="(prefers-color-scheme: dark)">
+  <source srcset="images/tls_.jpg" media="(prefers-color-scheme: light)">
+  <img src="images/tls.jpg" width="600">
+</picture>
+
 1. **Firefox** captures encrypted network traffic and logs SSL session keys to `sslkeys.log`.
 2. **pcap** intercepts the traffic and feeds raw packets into the `ntk` processing stack.
 3. Inside **`ntk`**, the following components are used:
