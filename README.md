@@ -86,11 +86,11 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
     <td><code>spmc_transfer_queue&lt;T,Filter&gt;</code></td>
     <td style="padding-left: 20px;">
       <strong>Purpose:</strong><br>
-      Thread-safe queue with optional filtering for handing off completed streams.<br><br>
+      Thread-safe single-producer-mutliple-consumer queue with optional filtering for handing off completed streams.<br><br>
       <strong>Design:</strong><br>
       - Implements <code>transfer_queue_interface<T></code>.<br>
       - Supports an optional <code>Filter</code> template parameter that determines whether to accept an item.<br>
-      - Uses <code>std::queue</code>, <code>std::mutex</code>, and <code>condition_variable</code> to allow blocking or timed popping.<br><br>
+      - Uses <code>std::queue</code>, <code>std::mutex</code>, and <code>std::condition_variable</code> to allow blocking or timed popping.<br><br>
     </td>
   </tr>
   <tr>
