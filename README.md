@@ -137,11 +137,13 @@ int main() {
 
   ntk::ring_buffer<packet,ring_buffer_capacity> ring_buff;
 
+  // callback for packet_listener
   auto packet_callback = [&]( const struct pcap_pkthdr* header, const unsigned char* packet ) {
     std::vector<uint8_t> vec( packet, packet + header->caplen );
-`   ring_buff.push( vec );
+    ring_buff.push( vec );
   };
 
+  // callback for stream_processor
   auto stream_callback = [&]( ntk::tcp_live_stream&& live_stream ) {
     std::string filename = timestamp_filename();
     ntk::output_stream_to_file( filename, live_stream );
