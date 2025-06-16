@@ -129,7 +129,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
   <picture>
     <source srcset="images/processing_pipeline.jpg" media="(prefers-color-scheme: dark)">
     <source srcset="images/processing_pipeline_.jpg" media="(prefers-color-scheme: light)">
-    <img src="images/processing_pipeline_.jpg" width="600">
+    <img src="images/processing_pipeline_.jpg" width="1200">
   </picture>
 </div>
 
