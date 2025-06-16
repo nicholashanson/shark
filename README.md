@@ -181,11 +181,11 @@ The diagram below shows how <code>ntk</code> can be used to decrypt and extract 
 2. **pcap** intercepts the traffic and feeds raw packets into the `ntk` processing stack.
 3. Inside **`ntk`**, the following components are used:
    - **TCP session reconstruction**: Reassembles TCP streams from raw packets.
-   - **TLS record parsing**: Extracts encrypted TLS records and metadata (e.g., `client_random`).
+   - **TLS record parsing**: Extracts encrypted TLS records and metadata ( e.g., `client_random` ).
    - **SSL key extraction**: Useses `clinet_random` to extract the necessary session keys from `sslkeys.log`.
 4. **OpenSSL** uses the session secrets and the metadata extracted from the handshake to decrypt the TLS records.
 5. **HTTP payload extraction** pulls the decrypted content from the TLS records.
-6. The resulting data (e.g., `.ts` video segments) is saved to disk.
+6. The resulting data ( e.g., `.ts` video segments ) is saved to disk.
 
 ```cpp
     // four: ( client_ip, server_ip, client_port, server_port )
