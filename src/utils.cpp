@@ -34,6 +34,36 @@ namespace ntk {
         return packets;
     }
 
+    void print_vector( const std::vector<uint8_t>& data ) {
+        for ( auto byte : data ) {
+            std::cout << std::hex << std::setw( 2 ) << std::setfill( '0' ) << static_cast<int>( byte ) << " ";
+        }
+        std::cout << std::dec << std::endl;
+    }
+
+    void print_packet_array( const unsigned char* packet_data, const size_t packet_len ) {
+        for ( size_t i = 0; i < packet_len; ++i ) {
+            std::cout << std::hex << std::setw( 2 ) << std::setfill( '0' ) << static_cast<int>( packet_data[ i ] ) << " ";
+        }
+        std::cout << std::dec << std::endl;
+    }
+
+    void print_tcp_stream_info(const std::map<uint32_t, std::vector<uint8_t>>& stream ) {
+        for (const auto& [seq_num, data] : stream) {
+            std::cout << "Seq: " << seq_num 
+                      << ", Size: " << data.size() << " bytes\n";
+        }
+    }
+
+    void print_tcp_options( const tcp_header& header ) {
+        for ( const auto& opt : header.options ) {
+            std::cout << "Option kind: " << static_cast<int>( opt.type ) << " -> data bytes: ";
+            for ( const auto& byte : opt.option ) {
+                std::cout << std::hex << std::setw( 2 ) << std::setfill( '0' ) << static_cast<int>( byte ) << " ";
+            }
+            std::cout << std::dec << std::endl;  
+        }
+    }
     
     std::vector<uint8_t> parse_hex_line( const std::string& line ) {
         
@@ -48,7 +78,6 @@ namespace ntk {
 
         return bytes;
     }
-
 
     std::vector<std::streampos> index_line_offsets( const std::string& filename ) {
 
