@@ -20,11 +20,6 @@ sudo ./ntk_tests
 
 # TCP Session Reconstruction
 ## Processing Pipeline
-<!--
-<p align="center">
-  <img src="main/pipeline.jpg" width="600">
-</p>
--->
 
 <div align="center">
   <picture>
@@ -127,12 +122,6 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
 </table>
 
 ## UML Diagram
-
-<!--
-<p align="center">
-  <img src="images/processing_pipeline.jpg" width="1200">
-</p>
--->
 
 <div align="center">
   <picture>
