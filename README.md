@@ -121,7 +121,7 @@ The <code>packet_listener</code> and <code>ring_buffer</code> work together to p
   </tr> 
 </table>
 
-## UML Diagram
+## Architecture
 
 <div align="center">
   <picture>
